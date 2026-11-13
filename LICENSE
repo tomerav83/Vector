@@ -1,0 +1,18 @@
+Copyright (c) 2026 Tomer Aviram. All rights reserved.
+
+This software, including its source code, documentation, SQL, data lock files and images (the "Software"), is the
+property of its author.
+
+The Software is shared with its recipient solely so that the recipient can evaluate the author as a job candidate.
+The recipient may read and run the Software for that evaluation only.
+
+No other right is granted. Without the author's prior written permission, no one may use, copy, modify, deploy,
+distribute, sublicense or sell the Software, or create derivative works from it, in whole or in part, for any other
+purpose, including use in any product, service or internal tool, or as training data for any machine-learning model.
+
+When the evaluation ends, or at the author's request, the recipient must delete every copy of the Software.
+
+The public data the Software downloads (FAA, BTS, DOT) remains under its publishers' own terms.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE AUTHOR BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
