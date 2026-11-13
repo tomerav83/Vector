@@ -1,5 +1,5 @@
 spring:
-  application.name: airport-agent
+  application.name: vector
   datasource:
     # Named in-memory DB: every pooled connection sees the same database.
     url: ${DB_URL:jdbc:duckdb:memory:airports}
