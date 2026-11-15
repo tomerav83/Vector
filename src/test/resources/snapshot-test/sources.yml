@@ -1,0 +1,13 @@
+# Three sources like the real ones: one with only a current state, one that needs it, and a yearly one with a check.
+# The site's index page names every file it has (FakeSite), so a yearly source's newest year is its newest file's.
+vector.data:
+  sql: classpath:snapshot-test/sql/
+  sources:
+    list:
+      url: "https://example.org/list.csv"
+    segments:
+      url: "https://example.org/segments-{year}.csv"
+      livecheck: { url: "https://example.org/", regex: 'segments-(\d{4})\.csv', pattern: yyyy }
+    stats:
+      url: "https://example.org/stats-{year}.csv"
+      livecheck: { url: "https://example.org/", regex: 'stats-(\d{4})\.csv', pattern: yyyy }

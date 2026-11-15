@@ -4,17 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Airport Investment Intelligence Agent.
+ * Airport Investment Intelligence Agent: ranks and compares US airports for terminal-expansion investment.
  *
- * <p>Package layout (ports and adapters):
- *
- * <ul>
- *   <li>{@code core} – scoring, KPIs, tools; depends only on {@code ports}, jOOQ and Spring AI abstractions.
- *   <li>{@code ports} – interfaces for every external boundary (country data, raw cache, live APIs).
- *   <li>{@code adapters} – concrete implementations (US data, local file cache, FAA/DOT live APIs).
- * </ul>
- *
- * The boundary is enforced by {@code ArchitectureTest}.
+ * <p>{@code data} builds the airport tables from the public sources before the app serves; the agent reads them through
+ * jOOQ.
  */
 @SpringBootApplication
 public class App {

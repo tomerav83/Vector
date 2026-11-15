@@ -1,21 +1,73 @@
-spring:
-  application.name: vector
-  datasource:
-    # Named in-memory DB: every pooled connection sees the same database.
-    url: ${DB_URL:jdbc:duckdb:memory:airports}
-    driver-class-name: ${DB_DRIVER:org.duckdb.DuckDBDriver}
-  jooq:
-    sql-dialect: ${DB_DIALECT:DUCKDB}
-  ai:
-    model:
-      # google-genai (dev default, free tier) | anthropic | none
-      chat: ${LLM_PROVIDER:google-genai}
-    google:
-      genai:
-        api-key: ${GEMINI_API_KEY:}
-        chat:
-          model: ${LLM_MODEL:gemini-3.5-flash-lite}
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY:}
-      chat:
-        model: ${LLM_MODEL:claude-haiku-5-5}
+# Vector's settings, one section per part of the app. Each country's sources are in application-<country>.yml.
+
+# --- The app: a web server that answers only on this machine, like the actuator below, so nobody else on the network
+# can spend your API key or read a conversation.
+spring.application.name: vector
+server.address: 127.0.0.1
+# Errors say why: the chat's as RFC 9457 problem details ({"status": 503, "detail": "No LLM: …"}), the rest on Spring
+# Boot's /error page.
+spring.mvc.problemdetails.enabled: true
+spring.web.error.include-message: always
+
+# --- Data (package data): the public files, their lock, and the in-memory database built from them at every start.
+# The countries whose data loads: each is a profile, application-<country>.yml, that lists its sources. Naming any
+# profile replaces this default, so name the countries too, e.g. --spring.profiles.active=us,dev.
+spring.profiles.default: us
+spring.datasource:
+  # Named in-memory DB: every pooled connection sees the same database, rebuilt at every start.
+  url: ${DB_URL:jdbc:duckdb:memory:airports}
+  driver-class-name: ${DB_DRIVER:org.duckdb.DuckDBDriver}
+  # DuckDB's own: the in-memory database stays when the pool closes its last connection, e.g. at its max lifetime.
+  hikari.data-source-properties.jdbc_pin_db: true
+spring.jooq.sql-dialect: ${DB_DIALECT:DUCKDB}
+logging.level.org.jooq.Constants: warn # no jOOQ banner and tips at startup
+# Spring Boot's settings for every HTTP client the app builds; the downloads use them (data.source.Web).
+spring.http.clients:
+  connect-timeout: 30s
+  read-timeout: 10m # a BTS form takes minutes to answer for a year of T-100 segments
+vector.data:
+  # Local copies of the downloaded files, kept across starts (gitignored).
+  cache-dir: ${DATA_CACHE_DIR:data/cache}
+  # Which period of each source to load and each file's fingerprint; committed, written by the app.
+  lock: data/sources.lock.json
+  # true = load the newest period of every source and rewrite the lock (review its diff, then commit it). The same as
+  # POST /actuator/data, but while starting.
+  refresh: false
+  # A download that fails with a timeout or an HTTP 5xx is tried again this often, the first after backoff, each wait
+  # twice the one before (data.source.Web).
+  retries: 2
+  backoff: 5s
+  # Defaults: sql classpath:sql/ (DataProperties).
+
+# --- Agent (package agent): the chat at POST /api/chat, and its tools.
+spring.ai:
+  # The LLM: none | google-genai | anthropic, each with its key below. With none the app needs no key: the data, the
+  # actuator and MCP work, and the chat says how to set one. A new provider is its Spring AI starter plus a block here.
+  model.chat: ${LLM_PROVIDER:none}
+  google.genai:
+    api-key: ${GEMINI_API_KEY:}
+    chat.model: ${LLM_MODEL:gemini-3.5-flash-lite} # free tier
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY:}
+    chat.model: ${LLM_MODEL:claude-haiku-5-5}
+  # What one question can cost: one more tool call ends the answer with Spring AI's "Total tool call limit exceeded".
+  tools.limits.max-total-tool-calls: 12
+  # The tools as an MCP server at /mcp: --spring.ai.mcp.server.enabled=true, then
+  # claude mcp add --transport http vector http://localhost:8080/mcp
+  mcp.server:
+    enabled: false
+    name: vector
+    protocol: streamable # unset, Spring AI 2.0.2 picks its deprecated SSE transport
+    annotation-scanner.enabled: false # the tools are ToolCallbackProvider beans, not @McpTool; silences 4 WARN lines
+# A tool's failure goes back to the model as text; this logs it too, which Spring AI does only at debug.
+logging.level.org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor: debug
+
+# --- Operations: Spring Boot Actuator on its own port, reachable only from this machine. GET /actuator/data lists what
+# each source loaded; POST /actuator/data refreshes every source while the current data keeps serving; GET
+# /actuator/health is DOWN while a source is left out, and names it.
+management:
+  endpoint.health.show-details: always
+  server:
+    port: 8081
+    address: 127.0.0.1
+  endpoints.web.exposure.include: health, data

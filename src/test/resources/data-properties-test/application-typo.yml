@@ -1,0 +1,4 @@
+vector.data.sources:
+  stats:
+    url: "https://example.org/stats.csv"
+    perod: P1Y

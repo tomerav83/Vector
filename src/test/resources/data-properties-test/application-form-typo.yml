@@ -1,0 +1,7 @@
+vector.data.sources:
+  stats:
+    url: "https://example.org/stats.aspx"
+    downloader: on-demand
+    form:
+      fields: { cboYear: "2025" }
+      chekced: [YEAR]

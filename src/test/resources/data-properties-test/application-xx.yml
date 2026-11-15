@@ -1,0 +1,6 @@
+# A made-up country: its profile only adds sources, and their SQL.
+vector.data.sources:
+  xx-register:
+    url: "https://example.org/xx/register.csv"
+  xx-traffic:
+    url: "https://example.org/xx/traffic.csv"

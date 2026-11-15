@@ -1,0 +1,81 @@
+# The United States, a country profile (on by default, see spring.profiles.default): every public source of its data, in
+# load order. A source's SQL (sql/<name>.sql) may read the tables of the sources above it. Periods are not written here:
+# data/sources.lock.json pins them, and a refresh moves them to the newest. Each key binds to data.source.Source:
+#
+#   url         where a file is published; {date}, {year}, {quarter}, {from}, {to} are filled per file, with an optional
+#               pattern: a date pattern ({date:dd_MMM_yyyy}) or bts-month-code (data.source.Template)
+#   downloader  how its files are downloaded: stored (default, a GET) or on-demand (BTS TranStats); see data.source.Downloader
+#   form        for on-demand: the fields to set (filled like url) and the boxes to tick; the page must have each one
+#   livecheck   where the source names its newest release, as Homebrew's livecheck: the page's url, a regex whose group
+#               is a release's date, and the date's pattern (yyyy is January 1); the newest match is the period.
+#               Without it, the source publishes only its current state
+#   history     releases before the newest to load too, one file each
+vector.data.sources:
+
+  # FAA airport register (NASR), republished every 28-day AIRAC cycle: identity, position, status and runways.
+  faa-register:
+    url: "https://nfdc.faa.gov/webContent/28DaySub/extra/{date:dd_MMM_yyyy}_APT_CSV.zip"
+    livecheck: # the FAA's product release API names the current cycle
+      url: "https://external-api.faa.gov/apra/nfdc/nasr/info?edition=current"
+      regex: '<editionDate>(.+?)</editionDate>'
+      pattern: MM/dd/yyyy
+
+  # BTS airport list: the codes, positions and names traffic statistics use. Only published as its current state.
+  bts-airports:
+    url: "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FLL&QO_fu146_anzr=N8vn6v10%20f722146%20gnoyr5"
+    downloader: on-demand
+    form:
+      fields: { cboGeography: All, cboYear: All, cboPeriod: All, btnDownload: Download }
+      checked: [chkDownloadZip, AIRPORT_ID, AIRPORT, DISPLAY_AIRPORT_NAME, DISPLAY_AIRPORT_CITY_NAME_FULL,
+                AIRPORT_COUNTRY_CODE_ISO, LATITUDE, LONGITUDE, AIRPORT_START_DATE]
+
+  # FAA calendar-year passenger boardings (enplanements) and hub size; each report also carries the year before.
+  faa-boardings:
+    url: "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/arp-cy{year}-commercial-service-enplanements.xlsx"
+    livecheck:
+      url: "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger"
+      regex: 'arp-cy(\d{4})-commercial-service-enplanements'
+      pattern: yyyy
+
+  # FAA Terminal Area Forecast (TAF): boardings and operations per airport, history plus ~25 years ahead; metro groups.
+  faa-forecast:
+    url: "https://taf.faa.gov/Downloads/APO100_TAF_Final_{year}.zip"
+    livecheck:
+      url: "https://taf.faa.gov/"
+      regex: 'APO100_TAF_Final_(\d{4})\.zip'
+      pattern: yyyy
+
+  # BTS T-100 segments: monthly traffic per carrier per nonstop leg touching the US. One file per year, which grows by a
+  # month at a time (about three months behind) until the year is complete.
+  bts-segments:
+    url: &t100-page "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FMG&QO_fu146_anzr=Nv4%20Pn44vr45"
+    downloader: on-demand
+    form:
+      fields: { cboGeography: All, cboYear: "{year}", cboPeriod: All, btnDownload: Download }
+      checked: [chkDownloadZip, YEAR, MONTH, UNIQUE_CARRIER, ORIGIN_AIRPORT_ID, ORIGIN, ORIGIN_COUNTRY,
+                DEST_AIRPORT_ID, DEST, DEST_COUNTRY, CLASS, DEPARTURES_SCHEDULED, DEPARTURES_PERFORMED, SEATS,
+                PASSENGERS, FREIGHT, MAIL, DISTANCE]
+    livecheck: # the form's own year list
+      url: *t100-page
+      regex: '<option[^>]*value="(\d{4})"'
+      pattern: yyyy
+    history: 1
+
+  # BTS airline on-time statistics: monthly arrival delays per airport and carrier, by cause. One file per year, growing
+  # like T-100. The URL is BTS's own encoding of "where YearMonth between <from> and <to>".
+  bts-delays:
+    url: "https://www.transtats.bts.gov/OT_Delay/ot_delaycause1_DL.aspx?8n4=9ur4r%20Brn4z106u%20or69rr0%20{from:bts-month-code}%20NaQ%20{to:bts-month-code}"
+    livecheck: # the delay-cause page's month list, e.g. "August, 2026", by year: one file holds a year
+      url: "https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp?20=E"
+      regex: '>[A-Z][a-z]+, (\d{4})<'
+      pattern: yyyy
+    history: 1
+
+  # DOT Consumer Airfare Report, Table 7: airport fare premiums, quarterly, lower 48 states only.
+  # A fixed sort order keeps the file, and so its fingerprint, stable; the limit is above the table's size.
+  dot-fares:
+    url: "https://data.transportation.gov/resource/d6nc-s8v6.csv?$where=year%3D{year}+AND+quarter%3D{quarter}&$order=tbl7pk&$limit=50000"
+    livecheck: # the newest quarter's first month, e.g. "202601"
+      url: "https://data.transportation.gov/resource/d6nc-s8v6.csv?$select=max(year*100%2Bquarter*3-2)"
+      regex: '"(\d{6})"'
+      pattern: yyyyMM

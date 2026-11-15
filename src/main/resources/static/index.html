@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --line: color-mix(in srgb, CanvasText 15%, Canvas);
+      --soft: color-mix(in srgb, CanvasText 5%, Canvas);
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+    body { max-width: 50rem; margin: 0 auto; padding: 1rem; background: Canvas; color: CanvasText; }
+    h1 { margin: 0; font-size: 1.4rem; }
+    header p { margin: .25rem 0 1rem; opacity: .75; }
+    #examples { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
+    #examples button { text-align: left; }
+    button { font: inherit; padding: .45rem .8rem; border: 1px solid var(--line); border-radius: .5rem;
+             background: var(--soft); color: inherit; cursor: pointer; }
+    #log { display: grid; gap: .75rem; margin: 1rem 0 5rem; }
+    .message { margin: 0; padding: .75rem 1rem; border-radius: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .you { justify-self: end; max-width: 85%; background: var(--soft); }
+    .agent { border: 1px solid var(--line); }
+    .waiting { opacity: .6; }
+    form { position: fixed; inset: auto 0 0 0; padding: .75rem 1rem; background: Canvas; border-top: 1px solid var(--line); }
+    form div { display: flex; gap: .5rem; max-width: 50rem; margin: 0 auto; }
+    input { flex: 1; min-width: 0; font: inherit; padding: .5rem .75rem; border: 1px solid var(--line);
+            border-radius: .5rem; background: Canvas; color: inherit; }
+    #listen[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Vector</h1>
+    <p>Which US airports are worth a bigger terminal? Every number comes from public FAA, BTS and DOT data.</p>
+  </header>
+  <ul id="examples">
+    <li><button>Which airports in New England are strong candidates for terminal expansion?</button></li>
+    <li><button>Compare LA and Santa Ana airport congestion levels.</button></li>
+    <li><button>What is the percentage of long haul flights out of Anchorage airport?</button></li>
+    <li><button>What is the unmet flight demand in SFO airport and why?</button></li>
+  </ul>
+  <div id="log" aria-live="polite"></div>
+  <form id="ask">
+    <div>
+      <input id="question" autocomplete="off" placeholder="Ask about US airports" aria-label="Question" required>
+      <button id="listen" type="button" hidden aria-label="Speak the question">Speak</button>
+      <button>Send</button>
+    </div>
+  </form>
+  <script>
+    const conversation = crypto.randomUUID();
+    const log = document.getElementById('log');
+    const question = document.getElementById('question');
+    const form = document.getElementById('ask');
+    let spoken = false;
+    let pending = Promise.resolve();
+
+    function say(who, text) {
+      const message = document.createElement('p');
+      message.className = `message ${who}`;
+      message.textContent = text;
+      log.append(message);
+      message.scrollIntoView({block: 'end'});
+      return message;
+    }
+
+    // One question at a time: a follow-up is sent once the answer before it is in the conversation.
+    function ask(text, aloud = false) {
+      say('you', text);
+      const answer = say('agent waiting', 'Reading the data…');
+      pending = pending.then(() => reply(text, answer, aloud));
+    }
+
+    async function reply(text, answer, aloud) {
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({conversation, text})
+        });
+        const body = await response.json();
+        answer.textContent = response.ok ? body.text : body.detail ?? body.message ?? response.statusText;
+      } catch (error) {
+        answer.textContent = `The agent is unreachable: ${error.message}`;
+      }
+      answer.classList.remove('waiting');
+      if (aloud) speechSynthesis.speak(new SpeechSynthesisUtterance(answer.textContent));
+    }
+
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      ask(question.value, spoken);
+      question.value = '';
+      spoken = false;
+    });
+    document.querySelectorAll('#examples button').forEach(button =>
+      button.addEventListener('click', () => ask(button.textContent)));
+
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (Recognition) {
+      const listen = document.getElementById('listen');
+      const recognition = new Recognition();
+      recognition.lang = 'en-US';
+      recognition.onresult = event => {
+        question.value = event.results[0][0].transcript;
+        spoken = true;
+        form.requestSubmit();
+      };
+      listen.hidden = false;
+      listen.addEventListener('click', () => recognition.start());
+    }
+  </script>
+</body>
+</html>

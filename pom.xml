@@ -18,14 +18,33 @@
 		<spring-ai.version>2.0.2</spring-ai.version>
 		<duckdb.version>2.0.0.1</duckdb.version>
 		<archunit.version>1.5.1</archunit.version>
+		<jsoup.version>1.23.2</jsoup.version>
+		<tika.version>4.2.0</tika.version>
+		<!-- Tests tagged "live" hit real public APIs; they run only in the manual live-data workflow. -->
+		<excludedGroups>live</excludedGroups>
 		<spotless.version>3.11.0</spotless.version>
 		<palantir-java-format.version>2.103.0</palantir-java-format.version>
+		<jacoco.version>0.8.16</jacoco.version>
+		<!-- DuckDB's JDBC driver loads native code; without this, Java 25 warns at every start and test run. -->
+		<native-access>--enable-native-access=ALL-UNNAMED</native-access>
+		<!-- The tests' JVM; JaCoCo adds its agent in front. -->
+		<argLine>${native-access}</argLine>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<!-- Operations: the `data` endpoint (status, refresh) and its health, on a local-only management port. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Downloads: RestClient with Boot's HTTP client settings (spring.http.clients.*). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
 		</dependency>
 
 		<!-- Database: jOOQ is the abstraction (dialect is config); DuckDB is the default engine. -->
@@ -40,7 +59,7 @@
 		</dependency>
 
 		<!-- LLM: Spring AI ChatClient is the abstraction; pick the provider with spring.ai.model.chat.
-		     Adding a provider = adding its starter. -->
+		     Adding a provider = adding its starter, plus its block in application.yml. -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-google-genai</artifactId>
@@ -53,11 +72,48 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-starter-model-chat-memory</artifactId>
 		</dependency>
+		<!-- The agent's tools as an MCP server too, so Claude Code or any MCP client can ask them without an API key. -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+		</dependency>
+
+		<!-- HTML parser for form pages whose hidden fields must be posted back (BTS TranStats, ASP.NET). -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>${jsoup.version}</version>
+		</dependency>
+
+		<!-- Tells a file's type by its first bytes, e.g. a web page served where a CSV was expected. -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>${tika.version}</version>
+		</dependency>
+
+		<!-- IDE completion and docs for vector.data.* in application-<country>.yml (the field docs of DataProperties). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+			<!-- No test mocks: they use fakes (FakeSite, ScriptedModel). Leaving Mockito out also drops its agent warning. -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.mockito</groupId>
+					<artifactId>mockito-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.mockito</groupId>
+					<artifactId>mockito-junit-jupiter</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.tngtech.archunit</groupId>
@@ -81,9 +137,63 @@
 
 	<build>
 		<plugins>
+			<!-- Java 23+ runs annotation processors only when asked: the configuration processor above. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<proc>full</proc>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>${native-access}</jvmArguments>
+				</configuration>
+			</plugin>
+			<!-- Coverage: `verify` fails under 90% of lines or 85% of branches; the report is target/site/jacoco. -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<limits>
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.90</minimum>
+										</limit>
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.85</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<!-- Formatting: `mvn spotless:apply` fixes, `verify` (CI) fails on unformatted code. -->
 			<plugin>

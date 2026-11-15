@@ -1,0 +1,3 @@
+vector.data.sources:
+  yy-traffic:
+    url: "https://example.org/yy/traffic.xlsx"
