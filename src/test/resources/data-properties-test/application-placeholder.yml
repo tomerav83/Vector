@@ -1,0 +1,5 @@
+vector.data.sources:
+  stats:
+    title: Stats
+    page: "https://example.org/"
+    url: "https://example.org/stats-{yaer}.csv"

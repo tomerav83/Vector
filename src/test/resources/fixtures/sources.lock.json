@@ -1,0 +1,176 @@
+{
+  "sources" : {
+    "bts-delays" : {
+      "period" : "2026-01-01",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.transtats.bts.gov/OT_Delay/ot_delaycause1_DL.aspx?8n4=9ur4r%20Brn4z106u%20or69rr0%20FHGDE%20NaQ%20FHGEF",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "2a81755f7ddef3f3d32149108f7452c1121444fcffab202aa80f228691f9ca97"
+      }, {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.transtats.bts.gov/OT_Delay/ot_delaycause1_DL.aspx?8n4=9ur4r%20Brn4z106u%20or69rr0%20FHGEG%20NaQ%20FHGFH",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "0f01f004208f349f4d3b434694f8af7a555766756e59d9b8d94a3539435defbb"
+      } ]
+    },
+    "bts-segments" : {
+      "period" : "2026-01-01",
+      "files" : [ {
+        "file" : {
+          "downloader" : "on-demand",
+          "url" : "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FMG&QO_fu146_anzr=Nv4%20Pn44vr45",
+          "form" : {
+            "fields" : {
+              "cboGeography" : "All",
+              "cboYear" : "2025",
+              "cboPeriod" : "All",
+              "btnDownload" : "Download"
+            },
+            "checked" : [ "chkDownloadZip", "YEAR", "MONTH", "UNIQUE_CARRIER", "ORIGIN_AIRPORT_ID", "ORIGIN", "ORIGIN_COUNTRY", "DEST_AIRPORT_ID", "DEST", "DEST_COUNTRY", "CLASS", "DEPARTURES_SCHEDULED", "DEPARTURES_PERFORMED", "SEATS", "PASSENGERS", "FREIGHT", "MAIL", "DISTANCE" ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "5735c34833bb42bb78d1c6eb27f2554a52142676aa2d7db3b613c582483954f6"
+      }, {
+        "file" : {
+          "downloader" : "on-demand",
+          "url" : "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FMG&QO_fu146_anzr=Nv4%20Pn44vr45",
+          "form" : {
+            "fields" : {
+              "cboGeography" : "All",
+              "cboYear" : "2026",
+              "cboPeriod" : "All",
+              "btnDownload" : "Download"
+            },
+            "checked" : [ "chkDownloadZip", "YEAR", "MONTH", "UNIQUE_CARRIER", "ORIGIN_AIRPORT_ID", "ORIGIN", "ORIGIN_COUNTRY", "DEST_AIRPORT_ID", "DEST", "DEST_COUNTRY", "CLASS", "DEPARTURES_SCHEDULED", "DEPARTURES_PERFORMED", "SEATS", "PASSENGERS", "FREIGHT", "MAIL", "DISTANCE" ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "22240b9bb4b8fbdb36b8f52c410232953575d93de2ba69e7c18b1dd6cde3a4d0"
+      } ]
+    },
+    "bts-airports" : {
+      "period" : "current",
+      "files" : [ {
+        "file" : {
+          "downloader" : "on-demand",
+          "url" : "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FLL&QO_fu146_anzr=N8vn6v10%20f722146%20gnoyr5",
+          "form" : {
+            "fields" : {
+              "cboGeography" : "All",
+              "cboYear" : "All",
+              "cboPeriod" : "All",
+              "btnDownload" : "Download"
+            },
+            "checked" : [ "chkDownloadZip", "AIRPORT_ID", "AIRPORT", "DISPLAY_AIRPORT_NAME", "DISPLAY_AIRPORT_CITY_NAME_FULL", "AIRPORT_COUNTRY_CODE_ISO", "LATITUDE", "LONGITUDE", "AIRPORT_START_DATE" ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "512f5aaff9f8ac6775b2616dc9140fc03d5d0d741042d45b502de32a3bed3279"
+      } ]
+    },
+    "dot-fares" : {
+      "period" : "2026-01-01",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://data.transportation.gov/resource/d6nc-s8v6.csv?$where=year%3D2026+AND+quarter%3D1&$order=tbl7pk&$limit=50000",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "fbc57381d5b8c902c40469bdf05aa31b2a38c726ec249c249b794440a5fbce10"
+      } ]
+    },
+    "faa-boardings" : {
+      "period" : "2025-01-01",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/arp-cy2025-commercial-service-enplanements.xlsx",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "332162fd02af24f779b7ddf353718beceb38f431a0f53f789ec1afda5eecf00b"
+      } ]
+    },
+    "faa-forecast" : {
+      "period" : "2025-01-01",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://taf.faa.gov/Downloads/APO100_TAF_Final_2025.zip",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "4de8d8b2265eebca25ab243fde664beaeb11f23c04cac5034ce41195973f0e2b"
+      } ]
+    },
+    "faa-register" : {
+      "period" : "2026-10-29",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://nfdc.faa.gov/webContent/28DaySub/extra/29_Oct_2026_APT_CSV.zip",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "table"
+        },
+        "fingerprint" : "739caf1adabb24e180d2550e77b88c6c1919b9465afcdcd125c6378480217692"
+      } ]
+    },
+    "faa-slots-capped" : {
+      "period" : "2023-01-09",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-3-airports",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "page"
+        },
+        "fingerprint" : "7d110b5f420d49c6d66f4a260a6891f8e4623be82db2abe4810919eb4f3e5b32"
+      } ]
+    },
+    "faa-slots-managed" : {
+      "period" : "2024-11-27",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-2-airports",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "page"
+        },
+        "fingerprint" : "72aa07ee8f82b1e46d0335eeeb476b63fb58d2958440f3a5371b6caa34c2c308"
+      } ]
+    }
+  }
+}

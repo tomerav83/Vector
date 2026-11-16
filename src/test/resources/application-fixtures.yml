@@ -1,0 +1,8 @@
+# Trimmed copies of real downloads (the airports of the BTS list fixture, chosen for their edge cases), committed so
+# every push loads every source without network. The lock pins the BTS sources to 2026, so they load 2025 to Jan 2026.
+# Frozen: a source the lock lacks fails every fixture test, and nothing is downloaded into src/test/resources.
+vector:
+  data:
+    frozen: true
+    cache-dir: src/test/resources/fixtures/cache
+    lock: src/test/resources/fixtures/sources.lock.json

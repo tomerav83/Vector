@@ -14,5 +14,11 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+      # DuckDB's spatial extension (108 MB), which code generation and the tests install.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.duckdb
+          key: duckdb-${{ hashFiles('pom.xml') }}
       # Deterministic suite only: no network data, no LLM calls.
       - run: mvn -B -ntp verify
+      - run: pipx run --spec sqlfluff==4.5.0 sqlfluff lint src/main/resources/sql

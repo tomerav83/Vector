@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tika reads this from the classpath root, merged with its own tika-mimetypes.xml; a format in data.format.impl
+     claims each type. Backslashes are doubled, as in Tika's file. A regex is matched against the file's first 64 KB,
+     so \z is the end of a smaller file. -->
+<mime-info>
+  <mime-type type="text/html">
+    <!-- a Page that starts with any tag, e.g. <p>We are investigating issues with TAF</p>; Tika's own HTML magic knows
+         only html, head, body, title, div, h1-h3 and DOCTYPE. -->
+    <magic priority="50">
+      <match value="\\s*&lt;[a-zA-Z!]" type="regex" offset="0"/>
+    </magic>
+  </mime-type>
+  <mime-type type="text/x-table-header">
+    <!-- a TableHeader: one non-blank line, e.g. year,quarter, how a source answers for a period not published yet.
+         Below HTML and XML, so a one-line page stays a page; a one-line JSON array is a header too, until a JSON
+         format brings magic above 30. -->
+    <sub-class-of type="text/plain"/>
+    <magic priority="30">
+      <match value="\\s*[^\\r\\n]+\\s*\\z" type="regex" offset="0"/>
+    </magic>
+  </mime-type>
+</mime-info>

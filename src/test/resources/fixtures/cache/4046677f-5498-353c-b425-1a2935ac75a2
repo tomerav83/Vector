@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<main id="main" class="main" aria-label="Site main">
+
+      
+      
+      <div id="main-wrapper" class="layout-main-wrapper clearfix">
+                  <div id="main" class="container">
+
+                            <div id="block-breadcrumbs" class="block block-system block-system-breadcrumb-block">
+  
+    
+      <div class="content">
+      
+
+  
+
+    </div>
+  </div>
+
+
+            
+            <div class="row row-offcanvas row-offcanvas-left clearfix">
+
+                              <!-- Sidebar First Region -->
+                <div class="sidebar col-xs-12 col-sm-12 col-md-3 col-lg-3 col-xl-3 order-first">
+                  <aside class="sidebar_first section" role="complementary">
+                    
+  <aside id="dot-region-view-mode--page" class="dot-region-view-mode dot-region-view-mode--page sidebar_first section" role="complementary">
+    <!-- Editorial Category Menu Starts -->
+          <div id="sidenav" class="sidenav">
+        <h1 class="sidenav-header text-white" id="nav-header">In This Section</h1>
+        
+      </div>
+      <!-- Editorial Category Menu Ends -->
+   <div id="sidecontent" class="sidecontent">
+     <!-- Related Content Starts -->
+     <div class="wrapper__related_links">
+     
+        
+        
+        
+        
+        
+              </div>
+      <!-- Related Content Ends -->
+      <!-- Contact Info Block Starts -->
+            <!-- Contact Info Block Ends -->
+    </div>
+  </aside>
+
+
+                  </aside>
+                </div>
+                <!-- Main Content Region -->
+                <div class="col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-9"  class="main-content col order-last" id="content" role="main">
+                  <section class="section">
+                    <a id="main-content" tabindex="-1"></a>
+                    <!--PAGEWATCH-->
+                      <div data-drupal-messages-fallback class="hidden"></div><div id="block-pagetitle" class="block block-core block-page-title-block">
+  
+    
+      <div class="content">
+      
+  <h1 class="title"><span class="field field--name-title field--type-string field--label-hidden">Slot Administration - U.S. Level 2 Airports</span>
+</h1>
+
+
+    </div>
+  </div>
+
+
+<article data-history-node-id="16806" class="node node--type-page node--view-mode-full pb-5 clearfix">
+
+
+
+  <header>
+    
+        
+      </header>
+
+  <div class="node__content clearfix">
+          <div class="block-content-body">
+        <ul style="list-style-type:none">
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration">Slot Administration Home</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_definition">Slot Definition</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_allocation_process">Slot Allocation Process</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation">Slot Administration/Schedule Facilitation</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/compliance_oversight">Compliance and Oversight</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/data">Data</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/regulatory_information">Regulatory Information</a></li>
+	<li><a href="https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/sys_cap_eval">Runway Construction Information</a></li>
+</ul>
+<!-- <h2 id="level-2">U.S. Level 2 Airports</h2> -->
+
+<p>If delays can be managed with some guidance on the number and timing of flights through schedule facilitation, then an airport may be designated Level 2 by the FAA based primarily on performance metrics and runway capacity. In the U.S., the FAA Slot Administration Office within the Air Traffic Organization facilitates runway schedules at Level 2 airports designated by the FAA.</p>
+
+<p>In the U.S., the Level 2 airports include Chicago O'Hare International Airport (ORD), Los Angeles International Airport (LAX), Newark Liberty International Airport (EWR) <a href="https://www.federalregister.gov/documents/2016/04/06/2016-07910/change-of-newark-liberty-international-airport-ewr-designation">(Change of Newark Liberty International Airport Designation, 81 FR 19861 (Oct. 20, 2016))</a> and San Francisco International Airport (SFO). An airport operator may separately declare an airport as Level 2 based on airport passenger terminal facility or other constraints.</p>
+
+<p>Currently, the four FAA Level 2 airports have a separate process for flights operating at specific airport facilities designated and managed by the local airport operator. In these cases, carriers provide schedules to the FAA and the local airport schedule facilitators. The carrier is responsible for ensuring matching runway and terminal approvals. Additionally, some international passenger terminals are Level 2 at non-FAA Level 2 designated airports and managed at the local airport level. Those airports are currently Orlando International Airport (MCO) and Seattle-Tacoma International Airport (SEA).</p>
+
+<h2>WSG Steps to Follow for Slot Facilitation for Level 2 Airports</h2>
+
+<div class="allocate topSpace">
+<ul>
+	<li>Initial Submission Deadline</li>
+	<li>AppCall Opened to Coordinators</li>
+	<li>SAL Deadline</li>
+	<li>AppCall Opened to Flight Operators</li>
+	<li>IATA Slot Conference</li>
+	<li>Slot Return Deadline</li>
+</ul>
+</div>
+
+<p>The roles of the facilitator at a Level 2 airport and the coordinator in a Level 3 airport as outlined in the WSG are administratively similar, but both are governed by different principles for managing scheduling processes. Schedule facilitation at Level 2 airports is designed to engender collaboration and gain mutual agreement between the parties regarding schedules and potential adjustments to stay within the performance goals and capacity limits of the airport, and to mitigate delays and congestion that would result in the need for Level 3 slot controls.</p>
+
+<p>Although voluntary, carriers are expected to seek and obtain schedule approval in the Level 2 process, as schedule facilitation is used to prevent an escalation in congestion necessitating a possible Level 3 designation. If a carrier chooses to operate a flight without approval from the FAA and the airport subsequently transitions into Level 3 status, the carrier would not receive priority for any flights not approved by the facilitator when the Level 3 historic baseline is established. This could ultimately result in the carrier being unable to continue similar service.</p>
+
+<p>The FAA tracks flight operations closely at Level 2 airports in the U.S., monitoring for time periods that may be susceptible to systemic volume-related delays as a result of congestion.</p>
+
+<p>The process for schedule facilitation of Level 2 airports follows many of the same steps as Level 3 airports.</p>
+
+<p>Instead of submitting historic slot data, each flight operator submits a proposed schedule for the "<em>Initial Submission Deadline,</em>" which is then analyzed, along with all of the submissions, for the potential to create delays.</p>
+
+<p>The "<em>SAL Deadline</em>" is when the FAA returns the schedules with any proposed changes or comments.</p>
+
+<p>Carriers have the opportunity to meet directly with the FAA at the IATA slot conference to discuss potential schedule changes, just as carriers at Level 3 airports do.</p>
+
+<p>The "<em>Slot Return Deadline</em>" for Level 2 is the opportunity for the carriers to remove any potential flights they do not intend to operate in the coming season.</p>
+
+<p>Carriers may contact the FAA Slot Administration Office for more information about runway review of operations at schedule-facilitated airports: <a href="mailto:7-awa-slotadmin@faa.gov">Slot Administration</a></p>
+
+      </div>
+          </div>
+
+            <p>Last updated: <time datetime="2024-11-27T12:00:00Z" class="datetime">Wednesday, November 27, 2024</time>
+</p>
+      
+</article>
+
+
+                    <!-- Sub Content Region -->
+                                                            <!--/PAGEWATCH-->
+                  </section>
+                </div>
+              
+            </div>
+          </div>
+              </div>
+
+    </main>
+</body>
+</html>
