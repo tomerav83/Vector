@@ -1,0 +1,18 @@
+# docker compose up: builds the image, then serves the chat on http://localhost:8080 and Actuator on :8081.
+# The model and its key come from .env (gitignored), e.g. LLM_PROVIDER=google-genai and GEMINI_API_KEY=...;
+# without it the app starts with no model (docs/SETUP.md).
+services:
+  vector:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      # This machine only, as without Docker: nobody else on the network can spend the key.
+      - 127.0.0.1:8080:8080
+      - 127.0.0.1:8081:8081
+    volumes:
+      - cache:/home/vector/app/data/cache # the ~40 MB of downloads, kept across restarts
+
+volumes:
+  cache:

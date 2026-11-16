@@ -1,0 +1,5 @@
+# Only what the image needs: the build's sources and the data lock.
+*
+!pom.xml
+!src
+!data/sources.lock.json

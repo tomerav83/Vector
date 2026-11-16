@@ -1,0 +1,72 @@
+# SQLFluff (https://docs.sqlfluff.com): dbt Labs' SQL style guide
+# (https://docs.getdbt.com/best-practices/how-we-style/2-how-we-style-our-sql), with this repo's choices.
+# Check: sqlfluff lint src/main/resources/sql   Fix the layout: sqlfluff fix src/main/resources/sql
+[sqlfluff]
+dialect = duckdb
+templater = placeholder
+# The Java code's line length (Palantir).
+max_line_length = 120
+# AM04: a pass-through view (recent_delay) and a CTE may select *.
+# ST06: a view lists its columns in the order a tool shows them.
+# AL09: CITY as city maps the file's header to our column.
+exclude_rules = AM04, ST06, AL09
+# schema.sql aligns its column types and comments by hand: its first line, -- noqa: disable=LT01, turns spacing
+# checks off there (an in-file sqlfluff:exclude_rules line is ignored on stdin, which Spotless uses).
+
+# {file} and {file:ENTRY}: Tables puts a quoted path there.
+[sqlfluff:templater:placeholder]
+param_regex = \{(?P<param_name>file)(?::[^}]+)?\}
+file = 'file.csv'
+
+[sqlfluff:indentation]
+tab_space_size = 4
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
+
+# A file's column keeps its header's spelling (ARPT_ID, Locid); every name of ours is lower case.
+[sqlfluff:rules:capitalisation.identifiers]
+extended_capitalisation_policy = lower
+unquoted_identifiers_policy = aliases
+
+[sqlfluff:rules:capitalisation.functions]
+extended_capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:capitalisation.types]
+extended_capitalisation_policy = lower
+
+# monthly: the table parameter of the recent() macro, not a column.
+[sqlfluff:rules:references.qualification]
+ignore_words = monthly
+
+# Columns of schema.sql that are also SQL keywords.
+[sqlfluff:rules:references.keywords]
+ignore_words = year, month, quarter, name, delayed
+
+# No single-letter or two-letter table aliases.
+[sqlfluff:rules:aliasing.length]
+min_alias_length = 3
+
+# group by and order by name their columns (dbt Labs prefers numbers: group by 1, 2).
+[sqlfluff:rules:ambiguous.column_references]
+group_by_and_order_by_style = explicit
+
+[sqlfluff:rules:ambiguous.join]
+fully_qualify_join_types = inner
+
+[sqlfluff:rules:convention.not_equal]
+preferred_not_equal_style = ansi
+
+[sqlfluff:rules:convention.casting_style]
+preferred_type_casting_style = cast
+
+# Script splits a file on ; at a line end.
+[sqlfluff:rules:convention.terminator]
+require_final_semicolon = true
+
+# A subquery in from or join becomes a named CTE.
+[sqlfluff:rules:structure.subquery]
+forbid_subquery_in = both

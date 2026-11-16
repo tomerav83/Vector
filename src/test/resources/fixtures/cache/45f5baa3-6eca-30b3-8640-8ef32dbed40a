@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<main id="main" class="main" aria-label="Site main">
+
+      
+      
+      <div id="main-wrapper" class="layout-main-wrapper clearfix">
+                  <div id="main" class="container">
+
+                            <div id="block-breadcrumbs" class="block block-system block-system-breadcrumb-block">
+  
+    
+      <div class="content">
+      
+
+  
+
+    </div>
+  </div>
+
+
+            
+            <div class="row row-offcanvas row-offcanvas-left clearfix">
+
+                              <!-- Sidebar First Region -->
+                <div class="sidebar col-xs-12 col-sm-12 col-md-3 col-lg-3 col-xl-3 order-first">
+                  <aside class="sidebar_first section" role="complementary">
+                    
+  <aside id="dot-region-view-mode--page" class="dot-region-view-mode dot-region-view-mode--page sidebar_first section" role="complementary">
+    <!-- Editorial Category Menu Starts -->
+          <div id="sidenav" class="sidenav">
+        <h1 class="sidenav-header text-white" id="nav-header">In This Section</h1>
+        
+      </div>
+      <!-- Editorial Category Menu Ends -->
+   <div id="sidecontent" class="sidecontent">
+     <!-- Related Content Starts -->
+     <div class="wrapper__related_links">
+     
+        
+        
+        
+        
+        
+              </div>
+      <!-- Related Content Ends -->
+      <!-- Contact Info Block Starts -->
+            <!-- Contact Info Block Ends -->
+    </div>
+  </aside>
+
+
+                  </aside>
+                </div>
+                <!-- Main Content Region -->
+                <div class="col-xs-12 col-sm-12 col-md-9 col-lg-9 col-xl-9"  class="main-content col order-last" id="content" role="main">
+                  <section class="section">
+                    <a id="main-content" tabindex="-1"></a>
+                    <!--PAGEWATCH-->
+                      <div data-drupal-messages-fallback class="hidden"></div><div id="block-pagetitle" class="block block-core block-page-title-block">
+  
+    
+      <div class="content">
+      
+  <h1 class="title"><span class="field field--name-title field--type-string field--label-hidden">Slot Administration - U.S. Level 3 Airports</span>
+</h1>
+
+
+    </div>
+  </div>
+
+
+<article data-history-node-id="16801" class="node node--type-page node--view-mode-full pb-5 clearfix">
+
+
+
+  <header>
+    
+        
+      </header>
+
+  <div class="node__content clearfix">
+          <div class="block-content-body">
+        <ul style="list-style-type:none">
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration">Slot Administration Home</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_definition">Slot Definition</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_allocation_process">Slot Allocation Process</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation">Slot Administration/Schedule Facilitation</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/compliance_oversight">Compliance and Oversight</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/data">Data</a></li>
+	<li><a href="/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/regulatory_information">Regulatory Information</a></li>
+	<li><a href="https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/sys_cap_eval">Runway Construction Information</a></li>
+</ul>
+<!-- <h2 id="level-3">U.S. Level 3 Airports</h2> -->
+
+<p>When the number of flights increases to a level that creates regular and significant flight delays, and infrastructure improvements to manage the capacity are not feasible in the near future, the airport may be declared a Level 3 airport by the FAA.</p>
+
+<p>In the U.S., the Level 3 airports are John F. Kennedy International Airport (<abbr>JFK</abbr>), LaGuardia Airport (<abbr>LGA</abbr>), and Ronald Reagan Washington National Airport (<abbr>DCA</abbr>).</p>
+
+<p>At DCA, slot controls that are equivalent to Level 3, are in place pursuant to the High Density Rule (14 CFR part 93 subparts K &amp; S) to govern operations daily, from 6:00 am to 11:59 pm. During slot-controlled hours, regularly scheduled operations are limited to 48 per hour by regulation. Some additional operations are permitted by exemption on a limited basis pursuant to 49 U.S.C. §§ 41714 and 41718.</p>
+
+<p>At JFK and LGA, Level 3 slot controls are in place pursuant to FAA Order.</p>
+
+<p>The Slot Administration Office within the Air Traffic Organization's System Operations Services at the FAA is the coordinator for runway slots at the U.S. designated Level 3 airports.</p>
+
+<p>Carriers or other interested parties may contact the Slot Administration Office at the FAA for more information about operations slot rules at slot-controlled airports: <a href="mailto:7-awa-slotadmin@faa.gov">7-awa-slotadmin@faa.gov</a>.</p>
+
+<h2>Slot Allocation Process for Level 3 Airports</h2>
+
+<p>DCA and LGA are Level 3 airports with primarily domestic or pre-cleared international operations. Allocations are on a continuing basis based on historic slots, a two-month minimum usage requirement, and other provisions in the FAA order and rules.</p>
+
+<p>The U.S. Level 3 airport that generally follows the IATA flight scheduling process, issued in the WSG is JFK. Unlike the other Level 3 airports, JFK has a large percentage of international flights.</p>
+
+<p>Flight schedules under the WSG process are generally divided into two seasons per year—Winter and Summer. Consequently, the slot allocation process occurs twice annually at JFK.</p>
+
+<p>The WSG also includes a set of steps followed to allocate slots for a given season. Currently, this applies in the U.S. only to JFK. The first step generally begins April (for the following Winter season) and September (for the next Summer season):</p>
+
+<h2>WSG Steps to Follow to Allocate Slots for Level 3 Airports</h2>
+
+<div class="allocate">
+<ul>
+	<li>SHL Deadline</li>
+	<li>Agreed Historics Deadline</li>
+	<li>Initial Submission Deadline</li>
+	<li>AppCall Opened to Coordinators</li>
+	<li>SAL Deadline</li>
+	<li>AppCall Opened to Flight Operators</li>
+	<li>IATA Slot Conference</li>
+	<li>Slot Return Deadline</li>
+	<li>Historics Baseline Date</li>
+</ul>
+</div>
+
+<p><em>Step 1: Slot Historic List (SHL) Deadline</em></p>
+
+<p>This is the first step in the slot allocation process for the season. The SHL Deadline is the date by which the FAA, as coordinator, must provide carriers of the details about the status of historic slots.</p>
+
+<p><em>Step 2: Agreed Historics Deadline</em></p>
+
+<p>The Agreed Historics Deadline is the last date for carriers to raise any objections to the FAA's assessment of the historic slots.</p>
+
+<p><em>Step 3: Initial Submission Deadline</em></p>
+
+<p>The Initial Submission Deadline is the last date when carriers can submit plans for flight operations in the designated season to receive priority consideration or to claim historic slots. Schedule requests after the Initial Submission Deadline are considered with lower priority. The FAA typically uses the same Initial Submission Deadline as the IATA Slot Conference and announces the seasonal deadline in the Federal Register. The deadlines are typically in May and October.</p>
+
+<p><em>Step 4: IATA Appointments Calendar (AppCal) opened to Coordinators</em></p>
+
+<p>AppCal is a calendar application used for the worldwide slot conference. At this step in the process, the FAA has the opportunity to set availability for meetings during the conference or to initiate meetings with carriers or others during the slot conference.</p>
+
+<p><em>Step 5: SAL (Slot Allocation Listing) Deadline</em></p>
+
+<p>The SAL Deadline is the date by which the FAA releases the first draft of the slot allocations for the coming season.</p>
+
+<p><em>Step 6: "AppCal" Open to airlines</em></p>
+
+<p>At this point, access to the AppCal calendar application is made available to carriers so that they can plan meetings with the FAA and slot coordinators from airports around the world to discuss their slot allocations, schedule plans, or other issues for the coming season.</p>
+
+<p><em>Step 7: IATA Slot Conference</em></p>
+
+<p>The Slot conference is held twice yearly, once for each of the scheduling seasons. The conference is convened to allocate slots at Level 3 airports and to discuss schedules and potential schedule adjustments at Level 2 airports. The coordinators and schedule facilitators (the FAA in the U.S. for runway operations) meet individually with carriers to discuss that operator's schedule for the coming season.</p>
+
+<p><em>Step 8: Slot Return Deadline</em></p>
+
+<p>The slot return deadline is the date by which carriers must return slots they do not intend to operate during the forthcoming season.</p>
+
+<p><em>Step 9: Historics Baseline Date</em></p>
+
+<p>The Historics Baseline Date is the date at which the new slot allocations become effective. This is also the start date used to calculate the usage requirement for allocated slots under the WSG process.</p>
+
+      </div>
+          </div>
+
+            <p>Last updated: Monday, January 09, 2023</p>
+      
+</article>
+
+
+                    <!-- Sub Content Region -->
+                                                            <!--/PAGEWATCH-->
+                  </section>
+                </div>
+              
+            </div>
+          </div>
+              </div>
+
+    </main>
+</body>
+</html>
