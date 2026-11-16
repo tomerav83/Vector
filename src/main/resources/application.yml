@@ -1,0 +1,21 @@
+spring:
+  application.name: vector
+  datasource:
+    # Named in-memory DB: every pooled connection sees the same database.
+    url: ${DB_URL:jdbc:duckdb:memory:airports}
+    driver-class-name: ${DB_DRIVER:org.duckdb.DuckDBDriver}
+  jooq:
+    sql-dialect: ${DB_DIALECT:DUCKDB}
+  ai:
+    model:
+      # google-genai (dev default, free tier) | anthropic | none
+      chat: ${LLM_PROVIDER:google-genai}
+    google:
+      genai:
+        api-key: ${GEMINI_API_KEY:}
+        chat:
+          model: ${LLM_MODEL:gemini-3.5-flash-lite}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        model: ${LLM_MODEL:claude-haiku-5-5}
