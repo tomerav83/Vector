@@ -1,6 +1,6 @@
 package com.vector.airport.agent.tool;
 
-import static org.jooq.impl.DSL.val;
+import static com.vector.airport.view.tables.Growth.GROWTH;
 
 import java.util.List;
 import java.util.Map;
@@ -29,15 +29,19 @@ class Growth implements ToolCallbackProvider {
             year, the newest fiscal year of actuals, and in the forecast year it names, the boardings added between \
             the two, and the yearly growth rate.""")
     Evidence<Map<String, Object>> growth(@ToolParam(description = AirportCodes.DESCRIPTION) List<String> airports) {
-        List<Map<String, Object>> growth = db.fetch(
-                        "select * from growth where airport_id = any({0}) order by airport_id",
-                        val(codes.ids(airports).toArray(String[]::new)))
-                .intoMaps();
-        return Evidence.create(
-                db,
-                growth,
-                List.of("FAA fiscal years run October to September.", "A forecast is the FAA's planning baseline."),
-                "faa-forecast");
+        return db.transactionResult(_ -> {
+            List<Map<String, Object>> growth = db.selectFrom(GROWTH)
+                    .where(GROWTH.AIRPORT_ID.in(codes.ids(airports)))
+                    .orderBy(GROWTH.AIRPORT_ID)
+                    .fetchMaps();
+            return Evidence.create(
+                    db,
+                    growth,
+                    List.of("Fiscal years run October to September."),
+                    List.of("The Terminal Area Forecast is the FAA's planning baseline: it projects demand and does not"
+                            + " account for airport capacity."),
+                    "faa-forecast");
+        });
     }
 
     @Override

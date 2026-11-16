@@ -3,10 +3,15 @@ package com.vector.airport.data;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toMap;
 
+import com.vector.airport.data.cache.Cache;
+import com.vector.airport.data.cache.Version;
+import com.vector.airport.data.downloader.Downloaders;
 import com.vector.airport.data.format.Formats;
-import com.vector.airport.data.source.Downloaders;
+import com.vector.airport.data.lock.Lock;
+import com.vector.airport.data.lock.LockedSource;
 import com.vector.airport.data.source.Source;
-import com.vector.airport.data.source.Web;
+import com.vector.airport.data.tables.Tables;
+import com.vector.airport.data.web.Web;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +44,9 @@ class Snapshot implements SmartInitializingSingleton {
     private final DataProperties properties;
     private final Downloaders downloaders;
     private final Formats formats;
+    private final Web web;
     private final DSLContext db;
     private final ApplicationEventPublisher events;
-    private final Web web;
 
     /** Checks every source's files and downloader first, so a mistake fails the start, not a refresh. */
     Snapshot(
@@ -55,8 +60,8 @@ class Snapshot implements SmartInitializingSingleton {
         this.properties = properties;
         this.downloaders = downloaders;
         this.formats = formats;
-        this.db = db;
         this.web = web;
+        this.db = db;
         this.events = events;
     }
 
@@ -96,8 +101,7 @@ class Snapshot implements SmartInitializingSingleton {
     private Map<String, LockedSource> publish(boolean refresh) {
         Lock lock = Lock.read(properties.lock());
         validate(lock);
-        try (Tables tables = Tables.create(
-                        db, formats, properties.sql(), properties.sources().keySet());
+        try (Tables tables = Tables.create(db, formats, properties.sql(), properties.sources());
                 Cache cache = new Cache(properties.cacheDir(), downloaders, formats, properties.frozen())) {
             Map<String, LockedSource> loaded = properties.sources().entrySet().stream()
                     .flatMap(source ->
@@ -114,6 +118,18 @@ class Snapshot implements SmartInitializingSingleton {
             tables.publish();
             return loaded;
         }
+    }
+
+    /** @throws IllegalStateException when the start is frozen and the lock lacks a source, before anything downloads */
+    private void validate(Lock lock) {
+        List<String> unlocked = properties.sources().keySet().stream()
+                .filter(name -> lock.find(name).isEmpty())
+                .toList();
+        Assert.state(
+                !properties.frozen() || unlocked.isEmpty(),
+                () ->
+                        "%s has no entry for %s, and vector.data.frozen never downloads: lock them with a start that is not"
+                                .formatted(properties.lock(), unlocked));
     }
 
     /**
@@ -151,17 +167,5 @@ class Snapshot implements SmartInitializingSingleton {
         }
         tables.leaveOut(name, problems);
         return Optional.empty();
-    }
-
-    /** @throws IllegalStateException when the start is frozen and the lock lacks a source, before anything downloads */
-    private void validate(Lock lock) {
-        List<String> unlocked = properties.sources().keySet().stream()
-                .filter(name -> lock.find(name).isEmpty())
-                .toList();
-        Assert.state(
-                !properties.frozen() || unlocked.isEmpty(),
-                () ->
-                        "%s has no entry for %s, and vector.data.frozen never downloads: lock them with a start that is not"
-                                .formatted(properties.lock(), unlocked));
     }
 }

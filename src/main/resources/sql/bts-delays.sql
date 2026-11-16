@@ -1,19 +1,30 @@
 -- BTS on-time delay causes, per arrival airport and carrier. Airports are named by code only (see bts_code). A few
 -- carrier-months are listed with nothing reported: skipped.
-select error('needs bts-airports') where not exists (select * from bts_airport);
+select error('needs bts-airports')
+where not exists (select * from bts_airport);
 
-insert into delay (year, month, airport_id, carrier, arrivals, delayed, cancelled, diverted,
-                   delayed_carrier, delayed_weather, delayed_nas, delayed_security, delayed_late_aircraft,
-                   delay_minutes, delay_minutes_carrier, delay_minutes_weather, delay_minutes_nas,
-                   delay_minutes_security, delay_minutes_late_aircraft)
-select cast(d.year as integer), cast(d.month as integer), b.airport_id, d.carrier,
-       cast(d.arr_flights as double), cast(d.arr_del15 as double),
-       cast(d.arr_cancelled as double), cast(d.arr_diverted as double),
-       cast(d.carrier_ct as double), cast(d.weather_ct as double), cast(d.nas_ct as double),
-       cast(d.security_ct as double), cast(d.late_aircraft_ct as double),
-       cast(d.arr_delay as double), cast(d.carrier_delay as double), cast(d.weather_delay as double),
-       cast(d.nas_delay as double), cast(d.security_delay as double), cast(d.late_aircraft_delay as double)
-from read_csv({file:Airline_Delay_Cause.csv}, all_varchar = true) d
-join bts_code c on c.code = d.airport
-join bts_airport b on b.bts_id = c.bts_id
-where d.arr_flights is not null;
+insert into delay by name
+select
+    cast(bts_delays.year as integer) as year,
+    cast(bts_delays.month as integer) as month,
+    bts_airport.airport_id,
+    bts_delays.carrier,
+    cast(bts_delays.arr_flights as double) as arrivals,
+    cast(bts_delays.arr_del15 as double) as delayed,
+    cast(bts_delays.arr_cancelled as double) as cancelled,
+    cast(bts_delays.arr_diverted as double) as diverted,
+    cast(bts_delays.carrier_ct as double) as delayed_carrier,
+    cast(bts_delays.weather_ct as double) as delayed_weather,
+    cast(bts_delays.nas_ct as double) as delayed_nas,
+    cast(bts_delays.security_ct as double) as delayed_security,
+    cast(bts_delays.late_aircraft_ct as double) as delayed_late_aircraft,
+    cast(bts_delays.arr_delay as double) as delay_minutes,
+    cast(bts_delays.carrier_delay as double) as delay_minutes_carrier,
+    cast(bts_delays.weather_delay as double) as delay_minutes_weather,
+    cast(bts_delays.nas_delay as double) as delay_minutes_nas,
+    cast(bts_delays.security_delay as double) as delay_minutes_security,
+    cast(bts_delays.late_aircraft_delay as double) as delay_minutes_late_aircraft
+from read_csv({file:Airline_Delay_Cause.csv}, all_varchar = true) as bts_delays
+inner join bts_code on bts_delays.airport = bts_code.code
+inner join bts_airport on bts_code.bts_id = bts_airport.bts_id
+where bts_delays.arr_flights is not null;

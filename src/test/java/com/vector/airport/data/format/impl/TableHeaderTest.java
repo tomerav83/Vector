@@ -13,10 +13,10 @@ import org.junit.jupiter.api.io.TempDir;
 /** One non-blank line is a table header alone, whatever its name, and has no rows. */
 class TableHeaderTest {
 
-    private final Formats formats = FormatsTest.formats();
-
     @TempDir
     Path dir;
+
+    private final Formats formats = FormatsTest.formats();
 
     @Test
     void oneLineIsAHeaderAlone() throws IOException {

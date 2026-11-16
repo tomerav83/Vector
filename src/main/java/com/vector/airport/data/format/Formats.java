@@ -58,17 +58,17 @@ public class Formats {
         return find(type(file));
     }
 
-    private Optional<Format> find(MediaType type) {
-        return Stream.iterate(type, Objects::nonNull, TYPES::getSupertype)
-                .filter(formats::containsKey)
-                .map(formats::get)
-                .findFirst();
-    }
-
     /** By content alone: with the name as a hint, Tika makes a table named {@code rows.html} a web page. */
     private MediaType type(Path file) throws IOException {
         try (TikaInputStream content = TikaInputStream.get(file)) {
             return detector.detect(content, new Metadata(), new ParseContext());
         }
+    }
+
+    private Optional<Format> find(MediaType type) {
+        return Stream.iterate(type, Objects::nonNull, TYPES::getSupertype)
+                .filter(formats::containsKey)
+                .map(formats::get)
+                .findFirst();
     }
 }

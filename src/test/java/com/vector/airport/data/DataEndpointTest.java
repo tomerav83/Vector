@@ -18,10 +18,10 @@ class DataEndpointTest {
     DataEndpoint endpoint;
 
     @Autowired
-    DataHealthIndicator health;
+    DataProperties properties;
 
     @Autowired
-    DataProperties properties;
+    DataHealthIndicator health;
 
     @Autowired
     Announcements announcements;

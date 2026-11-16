@@ -19,12 +19,12 @@ import org.junit.jupiter.api.io.TempDir;
 /** A zip is judged by what each of its files is, fingerprinted by its data alone, and hands SQL its entries. */
 class ZipTest {
 
-    private final Formats formats = FormatsTest.formats();
+    @TempDir
+    Path dir;
 
     private final Zip zip = new Zip();
 
-    @TempDir
-    Path dir;
+    private final Formats formats = FormatsTest.formats();
 
     @Test
     void needsADataRowInEveryCsv() throws IOException {

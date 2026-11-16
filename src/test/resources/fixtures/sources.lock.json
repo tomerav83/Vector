@@ -9,7 +9,8 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "2a81755f7ddef3f3d32149108f7452c1121444fcffab202aa80f228691f9ca97"
       }, {
@@ -19,7 +20,8 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "0f01f004208f349f4d3b434694f8af7a555766756e59d9b8d94a3539435defbb"
       } ]
@@ -38,7 +40,8 @@
               "btnDownload" : "Download"
             },
             "checked" : [ "chkDownloadZip", "YEAR", "MONTH", "UNIQUE_CARRIER", "ORIGIN_AIRPORT_ID", "ORIGIN", "ORIGIN_COUNTRY", "DEST_AIRPORT_ID", "DEST", "DEST_COUNTRY", "CLASS", "DEPARTURES_SCHEDULED", "DEPARTURES_PERFORMED", "SEATS", "PASSENGERS", "FREIGHT", "MAIL", "DISTANCE" ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "5735c34833bb42bb78d1c6eb27f2554a52142676aa2d7db3b613c582483954f6"
       }, {
@@ -53,7 +56,8 @@
               "btnDownload" : "Download"
             },
             "checked" : [ "chkDownloadZip", "YEAR", "MONTH", "UNIQUE_CARRIER", "ORIGIN_AIRPORT_ID", "ORIGIN", "ORIGIN_COUNTRY", "DEST_AIRPORT_ID", "DEST", "DEST_COUNTRY", "CLASS", "DEPARTURES_SCHEDULED", "DEPARTURES_PERFORMED", "SEATS", "PASSENGERS", "FREIGHT", "MAIL", "DISTANCE" ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "22240b9bb4b8fbdb36b8f52c410232953575d93de2ba69e7c18b1dd6cde3a4d0"
       } ]
@@ -72,7 +76,8 @@
               "btnDownload" : "Download"
             },
             "checked" : [ "chkDownloadZip", "AIRPORT_ID", "AIRPORT", "DISPLAY_AIRPORT_NAME", "DISPLAY_AIRPORT_CITY_NAME_FULL", "AIRPORT_COUNTRY_CODE_ISO", "LATITUDE", "LONGITUDE", "AIRPORT_START_DATE" ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "512f5aaff9f8ac6775b2616dc9140fc03d5d0d741042d45b502de32a3bed3279"
       } ]
@@ -86,7 +91,8 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "fbc57381d5b8c902c40469bdf05aa31b2a38c726ec249c249b794440a5fbce10"
       } ]
@@ -100,7 +106,8 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "332162fd02af24f779b7ddf353718beceb38f431a0f53f789ec1afda5eecf00b"
       } ]
@@ -114,7 +121,8 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "4de8d8b2265eebca25ab243fde664beaeb11f23c04cac5034ce41195973f0e2b"
       } ]
@@ -128,9 +136,40 @@
           "form" : {
             "fields" : { },
             "checked" : [ ]
-          }
+          },
+          "format" : "table"
         },
         "fingerprint" : "739caf1adabb24e180d2550e77b88c6c1919b9465afcdcd125c6378480217692"
+      } ]
+    },
+    "faa-slots-capped" : {
+      "period" : "2023-01-09",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-3-airports",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "page"
+        },
+        "fingerprint" : "7d110b5f420d49c6d66f4a260a6891f8e4623be82db2abe4810919eb4f3e5b32"
+      } ]
+    },
+    "faa-slots-managed" : {
+      "period" : "2024-11-27",
+      "files" : [ {
+        "file" : {
+          "downloader" : "stored",
+          "url" : "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-2-airports",
+          "form" : {
+            "fields" : { },
+            "checked" : [ ]
+          },
+          "format" : "page"
+        },
+        "fingerprint" : "72aa07ee8f82b1e46d0335eeeb476b63fb58d2958440f3a5371b6caa34c2c308"
       } ]
     }
   }

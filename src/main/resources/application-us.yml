@@ -2,18 +2,23 @@
 # load order. A source's SQL (sql/<name>.sql) may read the tables of the sources above it. Periods are not written here:
 # data/sources.lock.json pins them, and a refresh moves them to the newest. Each key binds to data.source.Source:
 #
+#   title       its publisher and name, as the page cites it
+#   page        the publisher's page that describes it, which the citation links to
 #   url         where a file is published; {date}, {year}, {quarter}, {from}, {to} are filled per file, with an optional
 #               pattern: a date pattern ({date:dd_MMM_yyyy}) or bts-month-code (data.source.Template)
-#   downloader  how its files are downloaded: stored (default, a GET) or on-demand (BTS TranStats); see data.source.Downloader
+#   downloader  how its files are downloaded: stored (default, a GET) or on-demand (BTS TranStats); see data.downloader.Downloader
 #   form        for on-demand: the fields to set (filled like url) and the boxes to tick; the page must have each one
 #   livecheck   where the source names its newest release, as Homebrew's livecheck: the page's url, a regex whose group
 #               is a release's date, and the date's pattern (yyyy is January 1); the newest match is the period.
 #               Without it, the source publishes only its current state
 #   history     releases before the newest to load too, one file each
+#   format      page when the file is a web page that holds the data; else (table) a page means not published yet
 vector.data.sources:
 
   # FAA airport register (NASR), republished every 28-day AIRAC cycle: identity, position, status and runways.
   faa-register:
+    title: FAA NASR Airport Data
+    page: "https://www.faa.gov/air_traffic/flight_info/aeronav/aero_data/NASR_Subscription/"
     url: "https://nfdc.faa.gov/webContent/28DaySub/extra/{date:dd_MMM_yyyy}_APT_CSV.zip"
     livecheck: # the FAA's product release API names the current cycle
       url: "https://external-api.faa.gov/apra/nfdc/nasr/info?edition=current"
@@ -22,7 +27,9 @@ vector.data.sources:
 
   # BTS airport list: the codes, positions and names traffic statistics use. Only published as its current state.
   bts-airports:
-    url: "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FLL&QO_fu146_anzr=N8vn6v10%20f722146%20gnoyr5"
+    title: BTS Master Coordinate
+    page: &airports-page "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FLL&QO_fu146_anzr=N8vn6v10%20f722146%20gnoyr5"
+    url: *airports-page
     downloader: on-demand
     form:
       fields: { cboGeography: All, cboYear: All, cboPeriod: All, btnDownload: Download }
@@ -31,24 +38,30 @@ vector.data.sources:
 
   # FAA calendar-year passenger boardings (enplanements) and hub size; each report also carries the year before.
   faa-boardings:
+    title: FAA Passenger Boardings (Enplanements)
+    page: &boardings-page "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger"
     url: "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger/arp-cy{year}-commercial-service-enplanements.xlsx"
     livecheck:
-      url: "https://www.faa.gov/airports/planning_capacity/passenger_allcargo_stats/passenger"
+      url: *boardings-page
       regex: 'arp-cy(\d{4})-commercial-service-enplanements'
       pattern: yyyy
 
   # FAA Terminal Area Forecast (TAF): boardings and operations per airport, history plus ~25 years ahead; metro groups.
   faa-forecast:
+    title: FAA Terminal Area Forecast
+    page: &taf-page "https://taf.faa.gov/"
     url: "https://taf.faa.gov/Downloads/APO100_TAF_Final_{year}.zip"
     livecheck:
-      url: "https://taf.faa.gov/"
+      url: *taf-page
       regex: 'APO100_TAF_Final_(\d{4})\.zip'
       pattern: yyyy
 
   # BTS T-100 segments: monthly traffic per carrier per nonstop leg touching the US. One file per year, which grows by a
   # month at a time (about three months behind) until the year is complete.
   bts-segments:
-    url: &t100-page "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FMG&QO_fu146_anzr=Nv4%20Pn44vr45"
+    title: BTS T-100 Segment
+    page: &t100-page "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FMG&QO_fu146_anzr=Nv4%20Pn44vr45"
+    url: *t100-page
     downloader: on-demand
     form:
       fields: { cboGeography: All, cboYear: "{year}", cboPeriod: All, btnDownload: Download }
@@ -64,9 +77,11 @@ vector.data.sources:
   # BTS airline on-time statistics: monthly arrival delays per airport and carrier, by cause. One file per year, growing
   # like T-100. The URL is BTS's own encoding of "where YearMonth between <from> and <to>".
   bts-delays:
+    title: BTS Airline On-Time Statistics
+    page: &delays-page "https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp?20=E"
     url: "https://www.transtats.bts.gov/OT_Delay/ot_delaycause1_DL.aspx?8n4=9ur4r%20Brn4z106u%20or69rr0%20{from:bts-month-code}%20NaQ%20{to:bts-month-code}"
     livecheck: # the delay-cause page's month list, e.g. "August, 2026", by year: one file holds a year
-      url: "https://www.transtats.bts.gov/OT_Delay/OT_DelayCause1.asp?20=E"
+      url: *delays-page
       regex: '>[A-Z][a-z]+, (\d{4})<'
       pattern: yyyy
     history: 1
@@ -74,8 +89,32 @@ vector.data.sources:
   # DOT Consumer Airfare Report, Table 7: airport fare premiums, quarterly, lower 48 states only.
   # A fixed sort order keeps the file, and so its fingerprint, stable; the limit is above the table's size.
   dot-fares:
+    title: DOT Consumer Airfare Report, Table 7
+    page: "https://data.transportation.gov/d/d6nc-s8v6"
     url: "https://data.transportation.gov/resource/d6nc-s8v6.csv?$where=year%3D{year}+AND+quarter%3D{quarter}&$order=tbl7pk&$limit=50000"
     livecheck: # the newest quarter's first month, e.g. "202601"
       url: "https://data.transportation.gov/resource/d6nc-s8v6.csv?$select=max(year*100%2Bquarter*3-2)"
       regex: '"(\d{6})"'
       pattern: yyyyMM
+
+  # FAA Slot Administration: the airports where airlines need a slot for every flight (Level 3), and those whose
+  # schedules the FAA fits around the busiest hours (Level 2). Published only as web pages, which hold the lists.
+  faa-slots-capped:
+    title: FAA Slot Administration, Level 3 Airports
+    page: &slots-capped-page "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-3-airports"
+    url: *slots-capped-page
+    format: page
+    livecheck: # "Last updated: Monday, January 09, 2023"
+      url: *slots-capped-page
+      regex: &slots-updated 'Last updated:[^,]*, ([A-Z][a-z]+ \d\d, \d{4})'
+      pattern: &slots-date MMMM dd, yyyy
+
+  faa-slots-managed:
+    title: FAA Slot Administration, Level 2 Airports
+    page: &slots-managed-page "https://www.faa.gov/about/office_org/headquarters_offices/ato/service_units/systemops/perf_analysis/slot_administration/slot_administration_schedule_facilitation/level-2-airports"
+    url: *slots-managed-page
+    format: page
+    livecheck:
+      url: *slots-managed-page
+      regex: *slots-updated
+      pattern: *slots-date

@@ -29,7 +29,9 @@ class DataPropertiesTest {
                         "faa-forecast",
                         "bts-segments",
                         "bts-delays",
-                        "dot-fares"));
+                        "dot-fares",
+                        "faa-slots-capped",
+                        "faa-slots-managed"));
     }
 
     @Test

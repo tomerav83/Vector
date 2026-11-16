@@ -1,8 +1,9 @@
 package com.vector.airport.agent.tool;
 
+import static com.vector.airport.view.tables.AirportCode.AIRPORT_CODE;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toMap;
-import static org.jooq.impl.DSL.val;
+import static org.jooq.impl.DSL.partitionBy;
+import static org.jooq.impl.DSL.rowNumber;
 
 import java.util.List;
 import java.util.Locale;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component;
  * turned into the airport ids every tool queries, e.g. KSFO into SFO.
  */
 @Component
-class AirportCodes {
+public class AirportCodes {
 
     /** How a tool asks for airports. */
     static final String DESCRIPTION = "airport codes, e.g. [LAX, SNA]; find gives them";
@@ -32,17 +33,17 @@ class AirportCodes {
      *
      * @throws IllegalArgumentException naming the codes no airport has, so the model looks them up with find
      */
-    List<String> ids(List<String> codes) {
+    public List<String> ids(List<String> codes) {
         List<String> normalized = codes.stream()
                 .map(code -> code.strip().toUpperCase(Locale.ROOT))
                 .toList();
-        Map<String, String> ids = db.fetch("""
-                select code, airport_id
-                from airport_code
-                where code = any({0})
-                qualify row_number() over (partition by code order by kind = 'FAA' desc, kind = 'ICAO' desc) = 1
-                """, val(normalized.toArray(String[]::new))).stream()
-                .collect(toMap(row -> row.get("code", String.class), row -> row.get("airport_id", String.class)));
+        Map<String, String> ids = db.select(AIRPORT_CODE.CODE, AIRPORT_CODE.AIRPORT_ID)
+                .from(AIRPORT_CODE)
+                .where(AIRPORT_CODE.CODE.in(normalized))
+                .qualify(rowNumber()
+                        .over(partitionBy(AIRPORT_CODE.CODE).orderBy(AIRPORT_CODE.KIND.sortAsc("FAA", "ICAO", "BTS")))
+                        .eq(1))
+                .fetchMap(AIRPORT_CODE.CODE, AIRPORT_CODE.AIRPORT_ID);
         List<String> unknown = normalized.stream().filter(not(ids::containsKey)).toList();
         if (!unknown.isEmpty()) {
             throw new IllegalArgumentException("No airport has the code %s; look it up with find".formatted(unknown));

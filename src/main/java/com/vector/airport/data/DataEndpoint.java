@@ -1,5 +1,7 @@
 package com.vector.airport.data;
 
+import static com.vector.airport.view.tables.Source.SOURCE;
+
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
@@ -27,7 +29,7 @@ class DataEndpoint {
     /** What each source loaded, or why not: the {@code source} table. */
     @ReadOperation
     public List<Map<String, Object>> sources() {
-        return db.fetch("select * from source order by name").intoMaps();
+        return db.selectFrom(SOURCE).orderBy(SOURCE.NAME).fetchMaps();
     }
 
     /** Moves every source to its newest period, then lists what each loaded; the current data serves meanwhile. */

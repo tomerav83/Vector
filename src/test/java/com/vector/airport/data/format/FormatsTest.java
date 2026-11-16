@@ -23,10 +23,10 @@ public class FormatsTest {
 
     private static final byte[] PDF = {'%', 'P', 'D', 'F', '-', '1', '.', '7', '\n', 0, 0, 1, 2};
 
-    private final Formats formats = formats();
-
     @TempDir
     Path dir;
+
+    private final Formats formats = formats();
 
     /** Every format and detector, as Spring collects the beans. */
     public static Formats formats() {

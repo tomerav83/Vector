@@ -1,113 +1,72 @@
 # Vector
 
-Airport Investment Intelligence Agent: a chat agent that ranks and compares US airports for terminal-expansion
-investment, from public FAA, BTS and DOT data. How it works, the scoring and its tradeoffs: [docs/DESIGN.md](docs/DESIGN.md).
+![Vector's mascot, a small yellow robot plane, over the app's world map of flight routes](docs/images/mascot.jpg)
 
-## Run
+**Vector helps an investment analyst find US airports where a bigger terminal would pay off.** Ask it in plain
+English. It reads public FAA, BTS and DOT data, ranks and compares airports with a fixed scoring method, and says why,
+how sure it is, and what the data can't tell.
 
-Java 25 and Maven 3.9. A free Gemini key comes from [Google AI Studio](https://aistudio.google.com/apikey).
+> Which airports in New England are strong candidates for terminal expansion?
+> Compare LA and Santa Ana airport congestion levels.
+> What is the percentage of long haul flights out of Anchorage airport?
+> What is the unmet flight demand in SFO airport and why?
+
+Follow-ups work too ("and the three largest in Maine?", "weight growth higher"). You can speak a question, and Vector
+reads the answer aloud.
+
+## Why it exists
+
+The firm invests in airport modernization. Analysts spend days pulling traffic, delay and forecast tables before they
+can say which airports deserve a closer look. Vector does that first pass in a minute. It is a research assistant, not
+a decision maker: every figure links to its public source and period, and the ranking method is written down and fixed.
+
+## What makes it trustworthy
+
+- **The numbers come from code, not the model.** SQL and Java compute every figure and the score. The language model
+  picks which data to fetch and writes the explanation. If it writes a number that no tool returned, Vector asks it to
+  fix the answer, and cuts the number if it still appears.
+- **A fixed, explainable score.** Five measures (growth, scale, airfield headroom, fare premium, load factor), each
+  turned into a rank among the airports you asked about. See [how the score works](docs/SCORING.md).
+- **Honest about its limits.** Each answer gives the months it covers. It also says which source is missing and what
+  it had to assume. See [assumptions and scope](docs/SCOPE.md).
+- **Public data, pinned.** About 40 MB of government files, downloaded on the first start and pinned by a lock file,
+  like a package lock, so two people get the same answers. See [the data](docs/DATA.md).
+
+## Try it
+
+The quickest way needs only [Docker](https://docs.docker.com/get-docker/) and a free
+[Gemini API key](https://aistudio.google.com/apikey):
 
 ```bash
-LLM_PROVIDER=google-genai GEMINI_API_KEY=... mvn spring-boot:run
+git clone https://github.com/tomerav83/Vector.git && cd Vector
+printf 'LLM_PROVIDER=google-genai\nGEMINI_API_KEY=your-key\n' > .env
+docker compose up
 ```
 
-Then open http://localhost:8080 and ask, for example:
+Open http://localhost:8080 once the log says `Data ready`. The first start downloads the data, which takes a few
+minutes. Later starts take about 10 seconds.
 
-- Which airports in New England are strong candidates for terminal expansion?
-- Compare LA and Santa Ana airport congestion levels.
-- What is the percentage of long haul flights out of Anchorage airport?
-- What is the unmet flight demand in SFO airport and why?
+With Java 25 instead of Docker, or without any key, or to plug in Claude Code: the [setup guide](docs/SETUP.md).
 
-Other models: `LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=...`, and `LLM_MODEL` picks the model. Settings go in as
-environment variables: `mvn spring-boot:run` does not pass `--` options on to the app.
+## Documentation
 
-Voice: the page's Speak button takes a spoken question, and the answer is read aloud (the browser's Web Speech API).
-
-## Without an API key
-
-`LLM_PROVIDER` defaults to `none`, so the app starts without a key.
-
-1. `mvn spring-boot:run`. The log ends with `Data ready in … s`, and a chat question answers 503, saying how to set a
-   model.
-2. `curl 127.0.0.1:8081/actuator/data` lists what each source loaded; `curl 127.0.0.1:8081/actuator/health` is DOWN
-   while a source is left out, and names it.
-3. `mvn test -Dgroups=live -DexcludedGroups=none -Dtest=ExamQuestionsTest` checks the tools' figures for the four
-   questions above against the real data.
-4. Ask Claude Code instead: `SPRING_AI_MCP_SERVER_ENABLED=true mvn spring-boot:run`, then
-   `claude mcp add --transport http vector http://localhost:8080/mcp`, and ask it the questions above.
-
-## Data
-
-- The first start downloads ~40 MB of public US aviation data (no API keys) into `data/cache/`, which takes a few
-  minutes. Later starts read the cache and build the in-memory tables in ~10 s.
-- `data/sources.lock.json` (committed) pins exactly which data loads, like a package lock file: per source its period,
-  per file its fingerprint. A fresh clone downloads those periods; a file that changed upstream since is loaded anyway
-  and flagged (`matches_lock: false`).
-- No single source stops the app: one that can't be downloaded (after 2 retries) or loaded is left out, and
-  `curl 127.0.0.1:8081/actuator/data` says why.
-- Newer data: `curl -X POST 127.0.0.1:8081/actuator/data` while the app runs (the current data serves until the new is
-  complete), or start once with `VECTOR_DATA_REFRESH=true`. Each source moves to its newest published period; one that
-  fails keeps its locked period and says why. Review `git diff data/sources.lock.json`, then commit it.
-- Network: DuckDB downloads its spatial extension (extensions.duckdb.org) once per machine, which the xlsx sources
-  need, so a first `mvn verify` on a fresh machine is not offline.
-- Both ports answer only on this machine: 8080 (the chat) and 8081 (Actuator).
-
-## Where to look
-
-| Concept | Where |
+| Read this | To learn |
 |---|---|
-| A country's sources | `application-<cc>.yml` → `DataProperties` → `Source` |
-| A source's file per period | `Source.file`, `Template` |
-| The newest release | `Livecheck` |
-| Download methods | `Downloader` → `impl/{Stored, OnDemand}`, picked by name in `Downloaders` |
-| HTTP and retry | `Web` (`@Retryable`); `spring.http.clients.*`; `vector.data.retries/backoff` |
-| File kinds, rows, fingerprints | `Formats` → `impl/{Plain, Page, TableHeader, Zip, Xlsx}`; `custom-mimetypes.xml` |
-| The lock | `data/sources.lock.json`, `Lock` |
-| Local copies | `Cache` |
-| Build and refresh | `Snapshot`; `/actuator/data` is `DataEndpoint`; health is `DataHealthIndicator` |
-| Tables and publish | `Tables`, `Script`; `sql/schema.sql`, `sql/<source>.sql`, `finish.sql` |
-| Every figure | `sql/views.sql` |
-| New data | `SnapshotPublished` |
-| Chat and LLM | `Agent`, `agent/system.md`, `spring.ai.*` |
-| Tools | `Airports`, `Traffic`, `Congestion`, `Growth`, `Runways`; codes in `AirportCodes` |
-| Score | `Scores` (the tool), `Peers` (the math), `Weighting`, `Kpi`, the `candidate` view |
-| Answer shape | `Evidence` |
-| Rules | `ArchitectureTest` |
+| [Setup guide](docs/SETUP.md) | Every way to run it, the settings, and fixes for common problems |
+| [Design](docs/DESIGN.md) | The architecture on one page: how a question becomes an answer |
+| [Scoring](docs/SCORING.md) | The KPIs, their weights and why, with a worked example |
+| [Where AI is used](docs/AI.md) | What the model does, what it is never trusted with, and the guards |
+| [Data](docs/DATA.md) | Each public source, what it gives, how fresh it is |
+| [Assumptions and scope](docs/SCOPE.md) | What Vector assumes, where it is unsure, what it won't answer |
+| [Decisions](docs/decisions/README.md) | The main choices, one page each: the options weighed and why this one |
+| [Code](docs/CODE.md) | Where things live in the code; how to add a source, a KPI, a tool or a model |
 
-What you can add, and what it takes:
+## Built with
 
-| To add | You write | Spring Boot does the rest |
-|---|---|---|
-| A source | an entry in its country's `application-<cc>.yml`, `sql/<source>.sql` (its tables in `schema.sql`) and a fixture | binds and checks the entry; a typo stops the start, naming the key |
-| A country | `application-<cc>.yml` and its SQL; start with `SPRING_PROFILES_ACTIVE=us,<cc>` | profiles: each country's file adds its sources |
-| A way to download, e.g. a paged API | a `@Component("name")` implementing `Downloader` in `data/source/impl`; `downloader: name` in the entry | finds the bean by name; its HTTP client takes `spring.http.clients.*` |
-| A kind of file, e.g. gzip | a `@Component` implementing `Format` in `data/format/impl` | collects the beans; a container asks each entry's own format |
-| A figure | a column of a view in `sql/views.sql`; the tool reading that view returns it | |
-| A KPI | a `Kpi` constant and its column in the `candidate` view | `Scores`, `Peers` and `Weighting` stay as they are |
-| A tool | one class in `agent/tool` implementing `ToolCallbackProvider`, with `@Tool` methods | the chat and the MCP server both pick it up |
-| An LLM provider | its Spring AI starter in `pom.xml` and its block in `application.yml` | `LLM_PROVIDER` picks it |
-| Work after new data | an `@EventListener` for `SnapshotPublished` | the event bus |
+Java 25, Spring Boot 4.1, Spring AI 2.0 (Gemini or Claude, swappable), DuckDB in memory, jOOQ, and a plain HTML page.
+`mvn verify` tests every source, tool and the score on trimmed copies of the real files, with no network and no
+model.
 
-Adding a source, step by step:
+## License
 
-1. Its entry in `application-us.yml`, its tables in `sql/schema.sql`, and `sql/<source>.sql`, which puts its checks
-   first and reads columns by name.
-2. Its fixture: start once on the fixtures. Only the new source downloads, and its lock entry is written:
-   ```bash
-   VECTOR_DATA_CACHE_DIR=src/test/resources/fixtures/cache \
-   VECTOR_DATA_LOCK=src/test/resources/fixtures/sources.lock.json mvn spring-boot:run
-   ```
-   Trim the file to the rows the tests need, and put its new fingerprint in the fixture lock (`sha256sum` of a CSV;
-   until then its `UsDataTest` case says `matches_lock` is false).
-3. A test in `UsDataTest` named after the source, e.g. `faaRunwaysKeepTheirLengthInFeet`, and the same in
-   `UsLiveDataTest`.
-
-## Tests
-
-- `mvn verify`: formatting, every test, the ArchUnit rules, and a coverage floor (90% of lines, 85% of branches). The
-  data comes from trimmed copies of the real files (`src/test/resources/fixtures`); the chat runs against a scripted
-  model, so no LLM.
-- The fixtures start frozen (`vector.data.frozen`, as cargo's `--frozen`): nothing downloads, and a source the fixture
-  lock lacks fails every fixture test, naming it.
-- `mvn test -Dgroups=live -DexcludedGroups=none`: the real sources, and the exam's four questions against figures
-  checked by hand. The `live-data` workflow (Actions → Run workflow) runs the same.
+Copyright © 2026 Tomer Aviram. All rights reserved. Shared for hiring evaluation only; see [LICENSE](LICENSE).

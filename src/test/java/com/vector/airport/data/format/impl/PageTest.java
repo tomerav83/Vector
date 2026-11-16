@@ -13,10 +13,10 @@ import org.junit.jupiter.api.io.TempDir;
 /** HTML, even one tag on one line, and XML are pages whatever their name, and a page has no rows. */
 class PageTest {
 
-    private final Formats formats = FormatsTest.formats();
-
     @TempDir
     Path dir;
+
+    private final Formats formats = FormatsTest.formats();
 
     @Test
     void aWebPageHasNoRows() throws IOException {

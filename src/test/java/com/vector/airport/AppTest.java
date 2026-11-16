@@ -30,11 +30,11 @@ import org.springframework.web.client.RestClient;
 @ActiveProfiles({"us", "fixtures"})
 class AppTest {
 
-    @LocalServerPort
-    int port;
-
     @LocalManagementPort
     int managementPort;
+
+    @LocalServerPort
+    int port;
 
     @Test
     void dataEndpointListsWhatEachSourceLoaded() {
@@ -68,6 +68,15 @@ class AppTest {
     void mcpServerOffersEveryToolTheChatHas(@Autowired List<SyncToolSpecification> tools) {
         assertThat(tools)
                 .extracting(tool -> tool.tool().name())
-                .containsExactlyInAnyOrder("find", "traffic", "longHaul", "congestion", "growth", "runways", "rank");
+                .containsExactlyInAnyOrder(
+                        "find",
+                        "count",
+                        "traffic",
+                        "longHaul",
+                        "congestion",
+                        "growth",
+                        "runways",
+                        "flightLimits",
+                        "rank");
     }
 }

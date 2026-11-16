@@ -11,7 +11,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** traffic and longHaul read the newest 12 months of T-100 segments, with the state of that source and its caveats. */
+/**
+ * traffic and longHaul read the newest 12 months of T-100 segments, with the state of that source and its limitations.
+ */
 @FixtureDataTest
 class TrafficTest {
 
@@ -41,7 +43,7 @@ class TrafficTest {
     }
 
     @Test
-    void everyAnswerCarriesTheStateOfItsSourceAndItsCaveats() {
+    void everyAnswerCarriesTheStateOfItsSourceAndItsLimitations() {
         Evidence<Map<String, Object>> answer = traffic.traffic(List.of("SFO"));
 
         assertThat(answer.sources())
@@ -49,7 +51,9 @@ class TrafficTest {
                 .containsExactly(tuple("bts-segments", "2026-01-01", null));
         assertThat(List.of(answer, traffic.longHaul(List.of("SFO"), null)))
                 .as("both read T-100")
-                .allSatisfy(evidence -> assertThat(evidence.caveats())
-                        .contains("The newest month can still lack late-reporting airlines."));
+                .allSatisfy(
+                        evidence -> assertThat(evidence.limitations())
+                                .contains(
+                                        "The latest month is preliminary: airlines that file late are added in later releases."));
     }
 }

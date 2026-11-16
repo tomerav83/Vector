@@ -1,5 +1,7 @@
 package com.vector.airport.data;
 
+import static com.vector.airport.view.tables.Source.SOURCE;
+
 import java.util.List;
 import java.util.Map;
 import org.jooq.DSLContext;
@@ -22,9 +24,11 @@ class DataHealthIndicator implements HealthIndicator {
 
     @Override
     public Health health() {
-        List<Map<String, Object>> leftOut = db.fetch(
-                        "select name, problem from source where period is null order by name")
-                .intoMaps();
+        List<Map<String, Object>> leftOut = db.select(SOURCE.NAME, SOURCE.PROBLEM)
+                .from(SOURCE)
+                .where(SOURCE.PERIOD.isNull())
+                .orderBy(SOURCE.NAME)
+                .fetchMaps();
         return (leftOut.isEmpty() ? Health.up() : Health.down())
                 .withDetail("leftOut", leftOut)
                 .build();

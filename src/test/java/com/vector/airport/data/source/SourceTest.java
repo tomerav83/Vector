@@ -3,6 +3,9 @@ package com.vector.airport.data.source;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.vector.airport.data.web.FakeSite;
+import com.vector.airport.data.web.Web;
+import java.net.URI;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AutoClose;
@@ -21,18 +24,18 @@ import org.springframework.web.client.RestClient;
  */
 class SourceTest {
 
+    @AutoClose
+    private final FakeSite site = new FakeSite();
+
     private final Web web =
             new Web(RestClient.builder(), ClientHttpRequestFactoryBuilder.jdk(), HttpClientSettings.defaults());
-
-    /** The default profile, the US, as Spring Boot binds it. */
-    private final ApplicationContextRunner us =
-            new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer());
 
     private final ApplicationContextRunner app =
             new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer());
 
-    @AutoClose
-    private final FakeSite site = new FakeSite();
+    /** The default profile, the US, as Spring Boot binds it. */
+    private final ApplicationContextRunner us =
+            new ApplicationContextRunner().withInitializer(new ConfigDataApplicationContextInitializer());
 
     @Test
     void historyIsTheReleasesBeforeTheNewestOldestFirst() {
@@ -81,7 +84,7 @@ class SourceTest {
     void unsetKeysTakeTheirDefaults() {
         app.run(context -> assertThat(source(context, "faa-boardings").file("2025-01-01"))
                 .extracting(SourceFile::downloader, SourceFile::form)
-                .containsExactly(Downloader.STORED, Form.NONE));
+                .containsExactly(SourceFile.STORED, Form.NONE));
     }
 
     @Test
@@ -102,7 +105,15 @@ class SourceTest {
     }
 
     private static Source source(String url, Livecheck livecheck, int history) {
-        return new Source(url, Downloader.STORED, Form.NONE, livecheck, history);
+        return new Source(
+                "Stats",
+                URI.create("https://example.org/"),
+                url,
+                SourceFile.STORED,
+                Form.NONE,
+                livecheck,
+                history,
+                SourceFile.TABLE);
     }
 
     /** The source {@code name} as Spring Boot binds it from the active profiles, e.g. application-us.yml. */

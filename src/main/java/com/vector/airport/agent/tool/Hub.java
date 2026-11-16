@@ -2,9 +2,9 @@ package com.vector.airport.agent.tool;
 
 /**
  * The FAA hub size of a primary airport (10,000+ boardings a year) by its share of US boardings, as the {@code airport}
- * table's {@code hub} names it; a score ranks an airport among the airports of its size.
+ * table's {@code hub} names it, e.g. LARGE for the 30 busiest.
  */
-enum Hub {
+public enum Hub {
     LARGE,
     MEDIUM,
     SMALL,

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7df9f"/>
+      <stop offset=".45" stop-color="#d9aa52"/>
+      <stop offset="1" stop-color="#9a6c22"/>
+    </linearGradient>
+    <linearGradient id="facet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1c4"/>
+      <stop offset="1" stop-color="#c38f38"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#1c64c4"/>
+      <stop offset=".55" stop-color="#2fa8e6"/>
+      <stop offset="1" stop-color="#63f0f6"/>
+    </linearGradient>
+  </defs>
+  <path d="M10 12h30l40 92 26-62h22L82 136z" fill="url(#gold)"/>
+  <path d="M22 12h7l46 106-3 7z" fill="url(#facet)" opacity=".75"/>
+  <path d="M6 96c20 34 70 36 104-12 10-14 18-30 24-46" fill="none" stroke="url(#sky)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M120 30 152 6l-6 40z" fill="#63f0f6"/>
+</svg>

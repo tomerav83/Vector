@@ -17,10 +17,10 @@ import org.junit.jupiter.api.io.TempDir;
 /** A spreadsheet is told by its workbook, however far into the zip, and passes as having rows: DuckDB judges it. */
 class XlsxTest {
 
-    private final Formats formats = FormatsTest.formats();
-
     @TempDir
     Path dir;
+
+    private final Formats formats = FormatsTest.formats();
 
     @Test
     void itsXmlPartsAreNotPages() throws IOException {

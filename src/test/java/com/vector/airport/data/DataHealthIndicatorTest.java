@@ -1,5 +1,6 @@
 package com.vector.airport.data;
 
+import static com.vector.airport.view.tables.Source.SOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.sql.DriverManager;
@@ -22,8 +23,13 @@ class DataHealthIndicatorTest {
     @BeforeEach
     void setUp() throws SQLException {
         db = DSL.using(DriverManager.getConnection("jdbc:duckdb:"), SQLDialect.DUCKDB);
-        db.execute("create table source (name varchar primary key, period varchar, problem varchar)");
-        db.execute("insert into source (name, period) values ('stats', '2026-01-01')");
+        db.createTable(SOURCE).columns(SOURCE.fields()).execute();
+        db.insertInto(SOURCE)
+                .set(SOURCE.NAME, "stats")
+                .set(SOURCE.TITLE, "stats")
+                .set(SOURCE.PAGE, "https://example.org/")
+                .set(SOURCE.PERIOD, "2026-01-01")
+                .execute();
     }
 
     @Test
@@ -33,7 +39,12 @@ class DataHealthIndicatorTest {
 
     @Test
     void downNamingEachSourceLeftOutAndWhy() {
-        db.execute("insert into source (name, problem) values ('list', 'java.net.ConnectException')");
+        db.insertInto(SOURCE)
+                .set(SOURCE.NAME, "list")
+                .set(SOURCE.TITLE, "list")
+                .set(SOURCE.PAGE, "https://example.org/")
+                .set(SOURCE.PROBLEM, "java.net.ConnectException")
+                .execute();
 
         Health health = new DataHealthIndicator(db).health();
 

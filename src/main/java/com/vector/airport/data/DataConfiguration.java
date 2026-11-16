@@ -1,6 +1,6 @@
 package com.vector.airport.data;
 
-import com.vector.airport.data.source.Web;
+import com.vector.airport.data.web.Web;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.resilience.annotation.EnableResilientMethods;

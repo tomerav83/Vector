@@ -17,11 +17,23 @@ spring.datasource:
   # Named in-memory DB: every pooled connection sees the same database, rebuilt at every start.
   url: ${DB_URL:jdbc:duckdb:memory:airports}
   driver-class-name: ${DB_DRIVER:org.duckdb.DuckDBDriver}
-  # DuckDB's own: the in-memory database stays when the pool closes its last connection, e.g. at its max lifetime.
-  hikari.data-source-properties.jdbc_pin_db: true
+  # DuckDB's own settings, applied when the first connection opens the database.
+  hikari.data-source-properties:
+    # The in-memory database stays when the pool closes its last connection, e.g. at its max lifetime.
+    jdbc_pin_db: true
+    # All a query may read or write once schema.sql turns external access off: the downloads, and the extensions,
+    # which each build installs again; no other file and no URL ("Securing DuckDB" in DuckDB's manual).
+    allowed_directories: "['${vector.data.cache-dir}', '${user.home}/.duckdb/extensions']"
+    # Only the extensions schema.sql installs: none that a query pulls in, and no community ones.
+    autoinstall_known_extensions: false
+    autoload_known_extensions: false
+    allow_community_extensions: false
+    # No query changes a setting; schema.sql may only turn external access off.
+    lock_configuration: true
+    allowed_configs: "['enable_external_access']"
 spring.jooq.sql-dialect: ${DB_DIALECT:DUCKDB}
 logging.level.org.jooq.Constants: warn # no jOOQ banner and tips at startup
-# Spring Boot's settings for every HTTP client the app builds; the downloads use them (data.source.Web).
+# Spring Boot's settings for every HTTP client the app builds; the downloads use them (data.web.Web).
 spring.http.clients:
   connect-timeout: 30s
   read-timeout: 10m # a BTS form takes minutes to answer for a year of T-100 segments
@@ -34,7 +46,7 @@ vector.data:
   # POST /actuator/data, but while starting.
   refresh: false
   # A download that fails with a timeout or an HTTP 5xx is tried again this often, the first after backoff, each wait
-  # twice the one before (data.source.Web).
+  # twice the one before (data.web.Web).
   retries: 2
   backoff: 5s
   # Defaults: sql classpath:sql/ (DataProperties).
@@ -59,14 +71,16 @@ spring.ai:
     name: vector
     protocol: streamable # unset, Spring AI 2.0.2 picks its deprecated SSE transport
     annotation-scanner.enabled: false # the tools are ToolCallbackProvider beans, not @McpTool; silences 4 WARN lines
-# A tool's failure goes back to the model as text; this logs it too, which Spring AI does only at debug.
-logging.level.org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor: debug
+# How long the chat's stream of steps waits for the answer (unset, Tomcat's 30 s): up to 12 tool calls and a retry.
+spring.mvc.async.request-timeout: 3m
 
 # --- Operations: Spring Boot Actuator on its own port, reachable only from this machine. GET /actuator/data lists what
 # each source loaded; POST /actuator/data refreshes every source while the current data keeps serving; GET
 # /actuator/health is DOWN while a source is left out, and names it.
 management:
   endpoint.health.show-details: always
+  # Another site's page that posts here gets 403, so it cannot start a refresh; curl sends no Origin and passes.
+  endpoints.web.cors.allowed-origins: http://localhost:${management.server.port}
   server:
     port: 8081
     address: 127.0.0.1

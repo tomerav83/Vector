@@ -4,10 +4,16 @@ vector.data:
   sql: classpath:snapshot-test/sql/
   sources:
     list:
+      title: List
+      page: "https://example.org/"
       url: "https://example.org/list.csv"
     segments:
+      title: Segments
+      page: "https://example.org/"
       url: "https://example.org/segments-{year}.csv"
       livecheck: { url: "https://example.org/", regex: 'segments-(\d{4})\.csv', pattern: yyyy }
     stats:
+      title: Stats
+      page: "https://example.org/"
       url: "https://example.org/stats-{year}.csv"
       livecheck: { url: "https://example.org/", regex: 'stats-(\d{4})\.csv', pattern: yyyy }

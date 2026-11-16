@@ -14,12 +14,12 @@ import org.junit.jupiter.api.io.TempDir;
 /** A text table has rows, is fingerprinted byte for byte, and holds no entries. */
 class PlainTest {
 
+    @TempDir
+    Path dir;
+
     private final Formats formats = FormatsTest.formats();
 
     private final Plain plain = new Plain();
-
-    @TempDir
-    Path dir;
 
     @Test
     void aHeaderAndARowArePlain() throws IOException {

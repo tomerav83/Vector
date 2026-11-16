@@ -1,11 +1,21 @@
 package com.vector.airport.agent.tool;
 
-import static org.jooq.impl.DSL.val;
+import static com.vector.airport.view.tables.RecentSegment.RECENT_SEGMENT;
+import static com.vector.airport.view.tables.Traffic.TRAFFIC;
+import static org.jooq.impl.DSL.anyValue;
+import static org.jooq.impl.DSL.inline;
+import static org.jooq.impl.DSL.noCondition;
+import static org.jooq.impl.DSL.nullif;
+import static org.jooq.impl.DSL.round;
+import static org.jooq.impl.DSL.sum;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Field;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -20,11 +30,12 @@ import org.springframework.stereotype.Component;
 @Component
 class Traffic implements ToolCallbackProvider {
 
+    private static final String LATE_REPORTING =
+            "The latest month is preliminary: airlines that file late are added in later releases.";
+    private static final String SOURCE = "bts-segments";
+
     /** The shortest flight that counts as long haul, in statute miles, unless the analyst says otherwise. */
     private static final int LONG_HAUL_MILES = 3000;
-
-    private static final String SOURCE = "bts-segments";
-    private static final String LATE_REPORTING = "The newest month can still lack late-reporting airlines.";
 
     private final DSLContext db;
     private final AirportCodes codes;
@@ -39,17 +50,21 @@ class Traffic implements ToolCallbackProvider {
             (passengers / seats on scheduled passenger flights), departures scheduled and performed, and shortfall (the \
             share of scheduled departures not flown). Full flights and a shortfall are signs of unserved demand.""")
     Evidence<Map<String, Object>> traffic(@ToolParam(description = AirportCodes.DESCRIPTION) List<String> airports) {
-        List<Map<String, Object>> traffic = db.fetch(
-                        "select * from traffic where airport_id = any({0}) order by airport_id",
-                        val(codes.ids(airports).toArray(String[]::new)))
-                .intoMaps();
-        return Evidence.create(
-                db,
-                traffic,
-                List.of(
-                        LATE_REPORTING,
-                        "Shortfall mixes capacity limits with weather, crew and airline cancellations."),
-                SOURCE);
+        return db.transactionResult(_ -> {
+            List<Map<String, Object>> traffic = db.selectFrom(TRAFFIC)
+                    .where(TRAFFIC.AIRPORT_ID.in(codes.ids(airports)))
+                    .orderBy(TRAFFIC.AIRPORT_ID)
+                    .fetchMaps();
+            return Evidence.create(
+                    db,
+                    traffic,
+                    List.of("Departures not flown are scheduled departures that were not operated."),
+                    List.of(
+                            LATE_REPORTING,
+                            "Departures not flown do not say why: capacity limits, weather, crews and airline"
+                                    + " cancellations all count."),
+                    SOURCE);
+        });
     }
 
     @Tool(description = """
@@ -62,41 +77,56 @@ class Traffic implements ToolCallbackProvider {
                             description = "the shortest long-haul flight in statute miles; " + LONG_HAUL_MILES
                                     + " unless the user says otherwise")
                     Integer miles) {
-        List<Map<String, Object>> shares = db.fetch(
-                        """
-                with flights as (
-                    select *, distance_mi >= {1} as long_haul
-                    from recent_segment
-                    where origin_id = any({0}))
-                select origin_id as airport_id,
-                       any_value(first_month) as first_month,
-                       any_value(last_month) as last_month,
-                       {1} as miles,
-                       sum(departures_performed) as departures,
-                       round(sum(departures_performed) filter (where long_haul) / sum(departures_performed), 4)
-                           as long_haul_share,
-                       sum(departures_performed) filter (where passenger) as passenger_departures,
-                       round(sum(departures_performed) filter (where long_haul and passenger)
-                             / passenger_departures, 4) as passenger_long_haul_share,
-                       sum(departures_performed) filter (where not passenger) as cargo_departures,
-                       round(sum(departures_performed) filter (where long_haul and not passenger)
-                             / cargo_departures, 4) as cargo_long_haul_share
-                from flights
-                group by origin_id
-                order by origin_id
-                """,
-                        val(codes.ids(airports).toArray(String[]::new)),
-                        val(Objects.requireNonNullElse(miles, LONG_HAUL_MILES)))
-                .intoMaps();
-        return Evidence.create(
-                db,
-                shares,
-                List.of(LATE_REPORTING, "Departures performed, scheduled and charter; distance is the nonstop leg."),
-                SOURCE);
+        int shortest = Objects.requireNonNullElse(miles, LONG_HAUL_MILES);
+        Condition far = RECENT_SEGMENT.DISTANCE_MI.ge((double) shortest);
+        Condition passenger = RECENT_SEGMENT.PASSENGER.isTrue();
+        Condition cargo = RECENT_SEGMENT.PASSENGER.isFalse();
+        return db.transactionResult(_ -> {
+            List<Map<String, Object>> shares = db.select(
+                            RECENT_SEGMENT.ORIGIN_ID.as("airport_id"),
+                            // the same on every row of a recent() table
+                            anyValue(RECENT_SEGMENT.FIRST_MONTH).as("first_month"),
+                            anyValue(RECENT_SEGMENT.LAST_MONTH).as("last_month"),
+                            inline(shortest).as("miles"),
+                            departures(noCondition()).as("departures"),
+                            share(far, noCondition()).as("long_haul_share"),
+                            departures(passenger).as("passenger_departures"),
+                            share(far, passenger).as("passenger_long_haul_share"),
+                            departures(cargo).as("cargo_departures"),
+                            share(far, cargo).as("cargo_long_haul_share"))
+                    .from(RECENT_SEGMENT)
+                    .where(RECENT_SEGMENT.ORIGIN_ID.in(codes.ids(airports)))
+                    .groupBy(RECENT_SEGMENT.ORIGIN_ID)
+                    .orderBy(RECENT_SEGMENT.ORIGIN_ID)
+                    .fetchMaps();
+            return Evidence.create(
+                    db,
+                    shares,
+                    List.of("Departures are flights operated, scheduled and charter; distance is the nonstop length of"
+                            + " each leg."),
+                    List.of(LATE_REPORTING),
+                    SOURCE);
+        });
     }
 
     @Override
     public ToolCallback[] getToolCallbacks() {
         return ToolCallbacks.from(this);
+    }
+
+    /** The departures performed on the flights {@code flights} keeps, e.g. the passenger flights. */
+    private static Field<Long> departures(Condition flights) {
+        return sum(RECENT_SEGMENT.DEPARTURES_PERFORMED).filterWhere(flights).cast(Long.class);
+    }
+
+    /** The share of {@code flights}' departures that fly {@code far}, to 4 decimals; NULL without departures. */
+    private static Field<Double> share(Condition far, Condition flights) {
+        Field<BigDecimal> departures = sum(RECENT_SEGMENT.DEPARTURES_PERFORMED).filterWhere(flights);
+        return round(
+                        sum(RECENT_SEGMENT.DEPARTURES_PERFORMED)
+                                .filterWhere(far.and(flights))
+                                .div(nullif(departures, BigDecimal.ZERO)),
+                        4)
+                .cast(Double.class);
     }
 }

@@ -1,5 +1,7 @@
 vector.data.sources:
   stats:
+    title: Stats
+    page: "https://example.org/"
     url: "https://example.org/stats.aspx"
     downloader: on-demand
     form:

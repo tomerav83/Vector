@@ -4,89 +4,887 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vector</title>
+  <link rel="icon" href="logo.svg">
+  <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="mascot/search.webp" as="image">
+  <!-- Loaded up front, so the error pose still shows when the app is down. -->
+  <link rel="preload" href="mascot/error.webp" as="image">
   <style>
+    @font-face { font-family: Inter; src: url(fonts/inter.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+    @font-face { font-family: Montserrat; src: url(fonts/montserrat.woff2) format("woff2"); font-weight: 100 900;
+                 font-display: swap; }
     :root {
-      color-scheme: light dark;
-      --line: color-mix(in srgb, CanvasText 15%, Canvas);
-      --soft: color-mix(in srgb, CanvasText 5%, Canvas);
-      font: 16px/1.5 system-ui, sans-serif;
+      color-scheme: dark;
+      --night: #07112a;
+      --text: #e8eff9;
+      --muted: #a3b3cf; /* small text on the panel: ~7:1 (WCAG AAA) */
+      --text-dim: #b8c5dc; /* small text on the glass: ~7.9:1 (WCAG AAA) */
+      --gold: #e0b46a;
+      --gold-light: #f7dc9c;
+      --cyan: #58c6ec;
+      --sky: #2f86d8;
+      --glass: rgb(24 44 80 / 78%);
+      --line: rgb(128 168 228 / 24%);
+      --panel: rgb(12 27 54 / 72%);
+      --track: rgb(128 168 228 / 16%);
+      --ink-on-tile: #0b1d36;
+      --serious: #ec835a;
+      --serious-bg: rgb(236 131 90 / 13%);
+      --good: #84d9a8;
+      --good-bg: rgb(132 217 168 / 13%);
+      --cause-1: #3987e5;
+      --cause-2: #d95926;
+      --cause-3: #199e70;
+      --cause-4: #c98500;
+      --cause-5: #d55181;
+      font: 16px/1.55 Inter, system-ui, sans-serif;
     }
-    body { max-width: 50rem; margin: 0 auto; padding: 1rem; background: Canvas; color: CanvasText; }
-    h1 { margin: 0; font-size: 1.4rem; }
-    header p { margin: .25rem 0 1rem; opacity: .75; }
-    #examples { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
-    #examples button { text-align: left; }
-    button { font: inherit; padding: .45rem .8rem; border: 1px solid var(--line); border-radius: .5rem;
-             background: var(--soft); color: inherit; cursor: pointer; }
-    #log { display: grid; gap: .75rem; margin: 1rem 0 5rem; }
-    .message { margin: 0; padding: .75rem 1rem; border-radius: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-    .you { justify-self: end; max-width: 85%; background: var(--soft); }
-    .agent { border: 1px solid var(--line); }
-    .waiting { opacity: .6; }
-    form { position: fixed; inset: auto 0 0 0; padding: .75rem 1rem; background: Canvas; border-top: 1px solid var(--line); }
-    form div { display: flex; gap: .5rem; max-width: 50rem; margin: 0 auto; }
-    input { flex: 1; min-width: 0; font: inherit; padding: .5rem .75rem; border: 1px solid var(--line);
-            border-radius: .5rem; background: Canvas; color: inherit; }
-    #listen[hidden] { display: none; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; color: var(--text); background:
+             radial-gradient(ellipse 90% 70% at 50% 40%, #132a52 0%, #0b1a38 55%, var(--night) 100%); }
+    .world { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; opacity: .9;
+             pointer-events: none; }
+    .still .flights { display: none; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+
+    header { display: flex; align-items: center; justify-content: space-between; max-width: 76rem;
+             margin: 0 auto; padding: 1.6rem 1.5rem .5rem; }
+    .brand { display: flex; align-items: center; gap: .9rem; color: inherit; text-decoration: none; }
+    .brand img { width: 4.6rem; }
+    .brand span { display: grid; font-family: Montserrat, Inter, sans-serif; line-height: 1.05; }
+    .brand strong { font-size: 2.3rem; font-weight: 700; letter-spacing: .03em; background:
+                      linear-gradient(180deg, var(--gold-light), var(--gold) 60%, #b98a3e);
+                    background-clip: text; color: transparent; }
+    .brand small { font-size: .82rem; font-weight: 500; letter-spacing: .08em; color: var(--gold); }
+    nav { display: flex; gap: .9rem; }
+    .icon { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; padding: 0; border: 0;
+            border-radius: 50%; background: none; color: var(--cyan); }
+    .icon:hover { background: rgb(88 198 236 / 12%); }
+    .icon svg { width: 2.1rem; height: 2.1rem; }
+
+    #log { display: grid; gap: 1.4rem; max-width: 62rem; margin: 0 auto; padding: 1.5rem 1.5rem 9rem; }
+    .message { scroll-margin-bottom: 8rem; }
+
+    /* What Vector says, in the pose for the state of the search: a card holding the pose and the text, as the
+       greeting in the design; an answer has a small avatar beside a plain glass card instead. */
+    .vector { display: flex; align-items: center; gap: 1.1rem; max-width: 42rem; padding: .9rem 1.9rem .9rem 1rem;
+              border: 1.5px solid transparent; border-radius: 1.2rem;
+              background: linear-gradient(135deg, rgb(36 63 108 / 88%), rgb(20 38 72 / 86%)) padding-box,
+                          linear-gradient(100deg, var(--sky), var(--gold)) border-box;
+              box-shadow: 0 14px 40px rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 6%);
+              backdrop-filter: blur(10px); animation: arrive .35s ease-out both; }
+    /* A quick reply (an instant 400 or 503) shows no search pose: it fades in after half a second (spin-delay). */
+    .vector[data-state=search] { animation-delay: .5s; }
+    .vector[data-state=error] { background: linear-gradient(135deg, rgb(56 42 74 / 90%), rgb(28 32 64 / 88%)) padding-box,
+                                            linear-gradient(100deg, #ff7676, var(--gold)) border-box; }
+    .pose { position: relative; flex: none; width: 11.5rem; height: 7.9rem; }
+    .pose img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+                opacity: 0; transition: opacity .25s; filter: drop-shadow(0 8px 14px rgb(0 0 0 / 35%)); }
+    [data-state=greeting] .happy, [data-state=answer] .happy, [data-state=search] .search,
+    [data-state=question] .confused, [data-state=error] .error { opacity: 1; }
+    .card { flex: 1; min-width: 0; }
+    .card h2 { margin: 0 0 .15rem; font-size: 1.3rem; font-weight: 600; color: var(--gold); }
+    .card h2:empty { display: none; }
+    .text { font-size: 1.12rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+    [data-state=greeting] .text { font-size: 1.32rem; line-height: 1.38; white-space: normal; }
+    /* The greeting's scope: what Vector can and can't answer, side by side. */
+    .vector[data-state=greeting] { max-width: 54rem; }
+    .scope { display: grid; grid-template-columns: 1fr 1fr; gap: .2rem 1.6rem; margin-top: .55rem;
+             font-size: 1rem; line-height: 1.4; }
+    .scope h3 { margin: 0 0 .2rem; font-size: .8rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+                color: var(--muted); }
+    .scope ul { margin: 0; padding-left: 1.3rem; }
+    .scope li::marker { content: "✓  "; color: var(--cyan); }
+    .scope .not li::marker { content: "✕  "; color: var(--serious); }
+    /* While Vector searches: each tool it called (✓), then what it does now, pulsing a few times. */
+    .steps { margin: .2rem 0 0; padding: 0; list-style: none; font-size: 1rem; white-space: normal; }
+    .steps li::before { display: inline-block; width: 1.3rem; }
+    .steps .done::before { content: "✓"; color: var(--cyan); }
+    .steps .now::before { content: "●"; color: var(--gold); animation: pulse 1.2s ease-in-out 4; }
+    .elapsed { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .vector[data-state=answer] { align-items: flex-start; max-width: none; padding: 0; border: 0; background: none;
+                                 box-shadow: none; backdrop-filter: none; }
+    [data-state=answer] .pose { width: 4.6rem; height: 4.6rem; margin-top: .1rem; }
+    [data-state=answer] .pose::before { content: ""; position: absolute; inset: .35rem; border-radius: 50%;
+      background: radial-gradient(circle at 40% 30%, #2c4a7c, #142849);
+      box-shadow: 0 0 0 1px var(--line), 0 6px 18px rgb(0 0 0 / 40%); }
+    [data-state=answer] .card { display: grid; gap: .9rem; padding: 1.1rem 1.6rem; border: 1px solid var(--line);
+      border-radius: 1.1rem; background: var(--glass);
+      box-shadow: 0 14px 40px rgb(0 0 0 / 35%), inset 0 1px 0 rgb(255 255 255 / 6%); backdrop-filter: blur(10px); }
+    [data-state=answer] .text { white-space: normal; }
+    .text p { margin: 0 0 .35rem; }
+    .text p:last-child { margin: 0; }
+    .text ul { margin: .2rem 0 0; padding-left: 1.2rem; display: grid; gap: .2rem; }
+    .text strong { color: var(--gold-light); font-weight: 600; }
+
+    /* Under an answer, the tools' own rows: one airport's figures as tiles that open each tool's card, several
+       airports as a table, scores as a head-to-head table, then one line of sources. */
+    .strip { display: flex; flex-wrap: wrap; gap: .6rem; padding: .55rem; border: 1px solid var(--line);
+             border-radius: 1rem; background: var(--panel); }
+    .tile { flex: 1 1 10.5rem; min-width: 0; display: grid; align-content: start; gap: .1rem; padding: .65rem .8rem;
+            border: 1px solid var(--line); border-radius: .8rem; background: rgb(40 66 110 / 50%); text-align: left; }
+    button.tile:hover { border-color: var(--cyan); }
+    button.tile:focus-visible, .sources summary:focus-visible, .more:focus-visible { outline: 2px solid var(--cyan);
+                                                                                      outline-offset: 2px; }
+    .tile .value { display: flex; align-items: center; gap: .45rem; font-size: 1.55rem; font-weight: 600;
+                   line-height: 1.15; }
+    .tile .code { font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; }
+    .tile .label { font-size: .88rem; font-weight: 500; }
+    .tile .context { font-size: .8rem; color: var(--muted); }
+    .tile.cyan, .tile.gold { border: 0; color: var(--ink-on-tile); }
+    .tile.cyan { background: linear-gradient(135deg, #93e8f3, #47b9d3); }
+    .tile.gold { background: linear-gradient(135deg, #fbe6a4, #efbc4e); }
+    .tile.cyan .context, .tile.gold .context { color: rgb(11 29 54 / 72%); }
+    .tile .open { justify-self: start; margin-top: .15rem; font-size: .76rem; font-weight: 600; opacity: .8; }
+    .delta { display: inline-flex; gap: .2rem; align-items: center; font-size: .8rem; font-weight: 600; }
+    .delta.worse { color: #8a2c08; }
+    .tile:not(.cyan, .gold) .delta.worse { color: var(--serious); }
+    .meter { height: 6px; margin-top: .3rem; border-radius: 3px; background: var(--track); overflow: hidden; }
+    .meter i { display: block; height: 100%; border-radius: 3px; background: var(--cyan); }
+    .tile.cyan .meter, .tile.gold .meter { background: rgb(11 29 54 / 18%); }
+    .tile.cyan .meter i, .tile.gold .meter i { background: var(--ink-on-tile); }
+
+    .tool { display: grid; gap: .7rem; min-width: 0; padding: .85rem 1rem; border: 1px solid var(--line);
+            border-radius: 1rem; background: var(--panel); }
+    .tool h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+    .tool h3 span { color: var(--muted); font-weight: 400; }
+    .tool .strip { padding: 0; border: 0; background: none; }
+
+    .segments { display: flex; gap: 2px; height: 28px; }
+    .segments i { display: flex; align-items: center; min-width: 0; padding-left: .4rem; border-radius: 4px;
+                  font-style: normal; font-size: .8rem; font-weight: 600; color: #fff; white-space: nowrap; }
+    .labelled { display: grid; grid-template-columns: 3rem 1fr; gap: .6rem; align-items: center; font-size: .88rem;
+                font-weight: 600; }
+    .legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; margin: 0; padding: 0; list-style: none;
+              font-size: .82rem; color: var(--muted); }
+    .legend li { display: flex; align-items: center; gap: .35rem; }
+    .legend li::before { content: ""; width: .65rem; height: .65rem; border-radius: 2px; background: var(--swatch); }
+
+    .scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+    th { padding: .35rem .6rem; text-align: right; font-size: .8rem; font-weight: 500; color: var(--muted);
+         white-space: nowrap; }
+    td { padding: .45rem .6rem; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    tr.reference td { color: var(--muted); font-style: italic; }
+
+    /* A ranking: one head-to-head table, 1-4 airports as columns, 5 or more as rows. A KPI cell is the airport's rank on
+       that KPI among the airports ranked together: green ▲ in the top half, red ▼ in the bottom half, the figure under
+       it. */
+    .ranking { table-layout: fixed; font-size: .9rem; }
+    .ranking th { padding: .3rem .4rem; text-align: center; vertical-align: bottom; line-height: 1.25;
+                  white-space: normal; }
+    .ranking th small { display: block; font-size: .7rem; }
+    .ranking td { padding: .3rem .25rem; text-align: center; white-space: normal; }
+    .ranking td:first-child, .ranking th:first-child, .ranking td.airport { text-align: left; }
+    .ranking .label { font-weight: 500; }
+    .ranking .place, .ranking .score, .ranking .total td { font-weight: 600; }
+    .ranking .code { font-weight: 700; letter-spacing: .02em; }
+    .ranking .name { display: block; font-size: .75rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis;
+                     white-space: nowrap; }
+    .ranking .short { display: none; }
+    .ranking.wide col.place { width: 2.4rem; }
+    .ranking.wide col.airport { width: 22%; }
+    .ranking.wide col.score { width: 3.4rem; }
+    .ranking.tall col.label { width: 38%; }
+    .cell { display: grid; justify-items: center; gap: .05rem; padding: .3rem .2rem; border-radius: .5rem; }
+    .cell .rank { font-weight: 600; white-space: nowrap; }
+    .cell .figure { font-size: .78rem; color: var(--text-dim); white-space: nowrap; }
+    .cell.up { background: var(--good-bg); }
+    .cell.up .rank { color: var(--good); }
+    .cell.down { background: var(--serious-bg); }
+    .cell.down .rank { color: var(--serious); }
+    .cell.none .rank { color: var(--muted); font-weight: 400; }
+    .limits td { white-space: normal; text-align: left; }
+    .limit { display: inline-block; padding: .05rem .5rem; border: 1px solid var(--line); border-radius: 999px;
+             font-size: .8rem; font-weight: 600; white-space: nowrap; }
+    .limit.capped { border-color: transparent; color: var(--serious); background: var(--serious-bg); }
+    .limit.managed { border-color: transparent; color: var(--gold-light); background: rgb(224 180 106 / 12%); }
+    .limit.none { color: var(--muted); }
+    .more { justify-self: start; padding: .2rem .7rem; border: 1px solid var(--line); border-radius: 999px;
+            background: none; font-size: .82rem; color: var(--muted); }
+
+    .sources { display: flex; flex-wrap: wrap; gap: .3rem .9rem; align-items: baseline; padding-top: .5rem;
+               border-top: 1px solid var(--line); font-size: .875rem; color: var(--text-dim); }
+    .sources > span:first-child { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase;
+                                  color: var(--muted); }
+    .sources a { color: inherit; text-decoration: underline dotted rgb(184 197 220 / 50%); text-underline-offset: 3px; }
+    .sources a:hover { color: var(--text); }
+    .sources details { flex-basis: 100%; }
+    .sources summary { cursor: pointer; color: var(--cyan); width: max-content; }
+    .sources h4 { margin: .5rem 0 0; font-size: .75rem; font-weight: 600; letter-spacing: .06em;
+                  text-transform: uppercase; color: var(--muted); }
+    .sources ul { margin: .2rem 0 0; padding-left: 1.1rem; display: grid; gap: .15rem; }
+
+    /* Each pose reacts once when it arrives; searching floats while it waits, briefly (WCAG 2.2.2). */
+    [data-state=answer] .pose { animation: pop .5s ease-out; }
+    [data-state=search] .pose { animation: float 1.6s ease-in-out 3; }
+    [data-state=question] .pose { animation: tilt .7s ease-in-out; }
+    [data-state=error] .pose { animation: shake .45s ease-in-out; }
+    @keyframes arrive { from { opacity: 0; transform: translateY(.6rem); } }
+    @keyframes pop { 40% { transform: scale(1.08); } }
+    @keyframes float { 50% { transform: translateY(-.4rem); } }
+    @keyframes tilt { 30% { transform: rotate(-5deg); } 70% { transform: rotate(3deg); } }
+    @keyframes pulse { 50% { opacity: .25; } }
+    @keyframes shake { 25% { transform: translateX(-.3rem); } 75% { transform: translateX(.3rem); } }
+
+    .you { display: flex; justify-content: flex-end; align-items: center; gap: .8rem; }
+    .you p { max-width: min(38rem, 80%); margin: 0; padding: .75rem 1.2rem; border-radius: 1rem; font-size: 1.12rem;
+             background: linear-gradient(180deg, #2b4579, #213766); white-space: pre-wrap; overflow-wrap: anywhere;
+             box-shadow: 0 8px 24px rgb(0 0 0 / 28%), inset 0 1px 0 rgb(255 255 255 / 8%); }
+    .you::after { content: ""; flex: none; width: 3.3rem; height: 3.3rem; border-radius: 50%;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c4d2e8'%3E%3Ccircle cx='12' cy='8.4' r='4.3'/%3E%3Cpath d='M3.6 21c.9-4.7 4.2-7.1 8.4-7.1s7.5 2.4 8.4 7.1z'/%3E%3C/svg%3E")
+                  center / 58% no-repeat, radial-gradient(circle at 40% 30%, #3d5a8e, #243c68);
+      box-shadow: 0 0 0 1px var(--line), 0 6px 18px rgb(0 0 0 / 35%); }
+
+    #ask { position: fixed; inset: auto 0 1.4rem; display: flex; align-items: center; gap: .9rem; max-width: 62rem;
+           height: 4.4rem; margin: 0 auto; padding: 0 .55rem 0 1.8rem; border: 1px solid rgb(120 158 214 / 30%);
+           border-radius: 999px; background: rgb(13 27 54 / 86%); backdrop-filter: blur(14px);
+           box-shadow: 0 16px 48px rgb(0 0 0 / 45%), inset 0 1px 0 rgb(255 255 255 / 5%); }
+    #question { flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; font: inherit; font-size: 1.15rem;
+            background: none; color: var(--text); }
+    #question::placeholder { color: #6f84aa; }
+    #hint { color: #a5b5d1; font-size: 1.1rem; white-space: nowrap; }
+    #ask:has(.listening) #hint { color: var(--cyan); }
+    #ask:has(#question:valid):not(:has(.listening)) #hint { display: none; }
+
+    /* One gold orb, two jobs: the mic while the question is empty, Send once it holds text (always Send without
+       speech recognition). Its bezel ticks every 30°; while listening a beam sweeps it, as on a radar scope. */
+    .slot { position: relative; flex: none; width: 3.4rem; height: 3.4rem; margin-right: .35rem; }
+    #listen, .send { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; border: 0;
+                     border-radius: 50%; color: #14213d;
+                     background: radial-gradient(circle at 38% 30%, #ffe795, #f7bd45 55%, #e8901f);
+                     box-shadow: 0 0 0 .4rem rgb(255 196 82 / 14%), 0 0 2rem rgb(255 186 64 / 55%);
+                     transition: transform .28s cubic-bezier(.3, 1.4, .5, 1), opacity .18s, visibility .28s; }
+    #listen svg, .send svg { width: 45%; height: 45%; }
+    #listen:not([hidden]) + .send { opacity: 0; visibility: hidden; transform: scale(.4) rotate(-90deg); }
+    #ask:has(#question:valid) #listen:not(.listening) { opacity: 0; visibility: hidden;
+                                                         transform: scale(.4) rotate(90deg); }
+    #ask:has(#question:valid) #listen:not(.listening) + .send { opacity: 1; visibility: visible; transform: none; }
+    #listen::before, #listen::after { content: ""; position: absolute; inset: -22%; border-radius: 50%;
+                                      pointer-events: none; }
+    #listen::before { border: 1.5px solid rgb(88 198 236 / 30%); transition: border-color .3s;
+      background: repeating-conic-gradient(rgb(88 198 236 / 55%) 0 2deg, transparent 2deg 30deg);
+      mask: radial-gradient(closest-side, transparent 86%, #000 87%); }
+    #listen::after { opacity: 0; transition: opacity .3s;
+      background: conic-gradient(transparent 0 62%, rgb(88 198 236 / 15%) 80%, rgb(140 224 255 / 85%) 99.5%, #fff 100%);
+      mask: radial-gradient(closest-side, transparent 72%, #000 73%); }
+    #listen.listening::before { border-color: rgb(88 198 236 / 70%); }
+    #listen.listening::after { opacity: 1; animation: spin 1.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(1turn); } }
+    [hidden] { display: none !important; }
+
+    dialog { max-width: 34rem; padding: 1.4rem 1.7rem; border: 1px solid var(--line); border-radius: 1.1rem;
+             color: var(--text); background: rgb(16 32 62 / 96%); box-shadow: 0 24px 60px rgb(0 0 0 / 55%); }
+    dialog::backdrop { background: rgb(4 10 24 / 60%); backdrop-filter: blur(3px); }
+    dialog h2 { margin: 0 0 .6rem; color: var(--gold); font-size: 1.25rem; }
+    dialog p, dialog label { margin: 0 0 .8rem; color: #c9d6ec; }
+    dialog label { display: flex; gap: .7rem; align-items: center; justify-content: flex-start; text-align: left;
+                   cursor: pointer; }
+    dialog input { flex: none; width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--cyan); }
+    dialog .actions { position: static; display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.2rem; }
+    dialog .actions button { padding: .5rem 1.1rem; border: 1px solid var(--line); border-radius: 999px;
+                         background: rgb(40 68 112 / 60%); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .vector, .pose, .steps .now::before, #listen::before, #listen::after { animation: none !important; }
+      .flights { display: none; }
+    }
+    @media (max-width: 40rem) {
+      header { padding: 1rem 1rem .25rem; }
+      .brand img { width: 3.2rem; }
+      .brand strong { font-size: 1.6rem; }
+      .brand small { font-size: .75rem; }
+      #log { padding: 1rem 1rem 8rem; gap: 1.1rem; }
+      .vector { gap: .7rem; padding: .8rem 1.1rem .8rem .6rem; }
+      .pose { width: 6.6rem; height: 5.2rem; }
+      [data-state=answer] .pose { width: 3.4rem; height: 3.4rem; }
+      [data-state=answer] .card { padding: .9rem 1.1rem; }
+      .ranking .long, .ranking.wide .name, .ranking.wide .figure { display: none; }
+      .ranking .short { display: inline; }
+      .ranking.wide col.place { width: 1.9rem; }
+      .ranking.wide col.airport { width: 2.9rem; }
+      .ranking.wide col.score { width: 2.4rem; }
+      .ranking th { padding: .25rem .1rem; font-size: .7rem; }
+      .ranking td { padding: .2rem .1rem; }
+      .cell { padding: .3rem .05rem; }
+      .cell .rank { font-size: .82rem; }
+      .labelled { grid-template-columns: 1fr; gap: .2rem; }
+      [data-state=greeting] .text { font-size: 1.1rem; }
+      .scope { grid-template-columns: 1fr; font-size: .95rem; }
+      .card h2 { font-size: 1.12rem; }
+      .text { font-size: 1.02rem; }
+      #question { font-size: 1rem; }
+      #ask { inset: auto .6rem .8rem; height: 3.8rem; padding-left: 1.2rem; gap: .5rem; }
+      #hint { display: none; }
+      .slot { width: 3rem; height: 3rem; }
+    }
   </style>
 </head>
 <body>
+  <img class="world" src="world.svg" alt="">
+  <svg id="sky" class="world flights" viewBox="0 0 1600 697" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><path id="plane" d="M9 0 3 1.4-1 7H-3l2-5.6L-5 1.2-6.6 3H-8l1-3-1-3h1.4l1.6 1.8L-1-1.4-3-7h2l4 5.6L9 0z"/></defs>
+  </svg>
   <header>
-    <h1>Vector</h1>
-    <p>Which US airports are worth a bigger terminal? Every number comes from public FAA, BTS and DOT data.</p>
+    <a class="brand" href="/" aria-label="Vector, aviation data intelligence">
+      <img src="logo.svg" alt="">
+      <span aria-hidden="true"><strong>VECTOR</strong><small>AVIATION DATA INTELLIGENCE</small></span>
+    </a>
+    <nav>
+      <button class="icon" type="button" data-open="settings" aria-label="Settings">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor">
+          <circle cx="16" cy="16" r="11" stroke-width="3.4" stroke-dasharray="3.6 5.04"/>
+          <circle cx="16" cy="16" r="8.4" stroke-width="2"/><circle cx="16" cy="16" r="3.4" stroke-width="2"/>
+        </svg>
+      </button>
+    </nav>
   </header>
-  <ul id="examples">
-    <li><button>Which airports in New England are strong candidates for terminal expansion?</button></li>
-    <li><button>Compare LA and Santa Ana airport congestion levels.</button></li>
-    <li><button>What is the percentage of long haul flights out of Anchorage airport?</button></li>
-    <li><button>What is the unmet flight demand in SFO airport and why?</button></li>
-  </ul>
-  <div id="log" aria-live="polite"></div>
+  <main id="log" aria-live="polite">
+    <article class="message vector" data-state="greeting">
+      <div class="pose"><img class="happy" src="mascot/happy.webp" alt=""></div>
+      <div class="card">
+        <h2>Hi, I'm Vector!</h2>
+        <div class="text">
+          <p>I find the US airports worth a bigger terminal, from public FAA, BTS and DOT data.</p>
+          <div class="scope">
+            <section>
+              <h3>I can</h3>
+              <ul>
+                <li>Find airports by code, name, city, state or hub size</li>
+                <li>Show traffic: passengers, seats filled, flights not flown, long haul</li>
+                <li>Show delays and their causes, and the FAA's boardings forecast</li>
+                <li>Show runways and FAA flight limits</li>
+                <li>Rank airports for a bigger terminal, against each other or the US</li>
+              </ul>
+            </section>
+            <section class="not">
+              <h3>I can't</h3>
+              <ul>
+                <li>Cover airports outside the US</li>
+                <li>Give live flight status</li>
+                <li>Work out a deal's costs or returns</li>
+                <li>Give a figure the data lacks: I say what's missing</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
   <form id="ask">
-    <div>
-      <input id="question" autocomplete="off" placeholder="Ask about US airports" aria-label="Question" required>
-      <button id="listen" type="button" hidden aria-label="Speak the question">Speak</button>
-      <button>Send</button>
-    </div>
+    <input id="question" autocomplete="off" placeholder="Ask Vector about US airports…"
+           aria-label="Question" required>
+    <span id="hint" hidden>Tap to speak</span>
+    <span class="slot">
+      <button id="listen" type="button" hidden aria-label="Speak the question">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="9" y="2.5" width="6" height="11.5" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>
+        </svg>
+      </button>
+      <button class="send" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
+             stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+      </button>
+    </span>
   </form>
+
+  <template id="reply">
+    <article class="message vector">
+      <div class="pose">
+        <img class="happy" src="mascot/happy.webp" alt=""><img class="search" src="mascot/search.webp" alt="">
+        <img class="confused" src="mascot/confused.webp" alt=""><img class="error" src="mascot/error.webp" alt="">
+      </div>
+      <div class="card"><h2></h2><div class="text"></div></div>
+    </article>
+  </template>
+
+  <dialog id="settings"><form method="dialog">
+    <h2>Settings</h2>
+    <label><input id="aloud" type="checkbox"> Read every answer aloud</label>
+    <label><input id="planes" type="checkbox" checked> Moving planes</label>
+    <div class="actions"><button type="button" id="restart">New conversation</button><button>Close</button></div>
+  </form></dialog>
+
   <script>
     const conversation = crypto.randomUUID();
     const log = document.getElementById('log');
     const question = document.getElementById('question');
     const form = document.getElementById('ask');
+    const reply = document.getElementById('reply');
+    const aloud = document.getElementById('aloud');
     let spoken = false;
     let pending = Promise.resolve();
 
-    function say(who, text) {
-      const message = document.createElement('p');
-      message.className = `message ${who}`;
-      message.textContent = text;
+    function you(text) {
+      const message = document.createElement('div');
+      message.className = 'message you';
+      message.append(Object.assign(document.createElement('p'), {textContent: text}));
       log.append(message);
       message.scrollIntoView({block: 'end'});
-      return message;
+    }
+
+    // Vector's message in the pose for the state of the search: search, then answer, question or error. An answer's
+    // markdown becomes nodes, and the rows of the tools it called become cards under it.
+    function show(message, state, title, text, calls = []) {
+      message.dataset.state = state;
+      message.querySelector('h2').textContent = title;
+      const box = message.querySelector('.text');
+      if (state === 'answer') {
+        box.replaceChildren(...prose(text));
+        box.after(...figures(calls));
+      } else {
+        box.textContent = text;
+      }
+      message.scrollIntoView({block: 'end'});
     }
 
     // One question at a time: a follow-up is sent once the answer before it is in the conversation.
-    function ask(text, aloud = false) {
-      say('you', text);
-      const answer = say('agent waiting', 'Reading the data…');
-      pending = pending.then(() => reply(text, answer, aloud));
+    function ask(text, voice = false) {
+      you(text);
+      const message = reply.content.firstElementChild.cloneNode(true);
+      log.append(message);
+      show(message, 'search', 'Scanning the data…', '');
+      pending = pending.then(() => answer(text, message, voice));
     }
 
-    async function reply(text, answer, aloud) {
+    // While it waits: each tool the agent calls as a step done, then what it does now, with the seconds so far.
+    async function answer(text, message, voice) {
+      const now = el('li', {className: 'now'}, 'Reading your question');
+      message.querySelector('.text').replaceChildren(el('ol', {className: 'steps'}, now));
+      const done = new Set();
+      const step = tool => {
+        const label = VIEWS[tool]?.step;
+        if (!label || done.has(label)) return;
+        if (done.size === 0) now.before(el('li', {className: 'done'}, now.firstChild.textContent));
+        done.add(label);
+        now.before(el('li', {className: 'done'}, label));
+        now.firstChild.textContent = 'Checking the figures and writing the answer';
+      };
+      const started = Date.now();
+      const elapsed = Object.assign(document.createElement('span'), {className: 'elapsed', ariaHidden: 'true'});
+      const ticking = setInterval(() => {
+        elapsed.textContent = ` · ${Math.round((Date.now() - started) / 1000)} s`;
+        now.append(elapsed);
+      }, 1000);
+      const {state, title, text: said, calls} = await outcome(text, step);
+      clearInterval(ticking);
+      show(message, state, title, said, calls);
+      if (voice || aloud.checked) speechSynthesis.speak(new SpeechSynthesisUtterance(said.replaceAll('**', '')));
+    }
+
+    // How a question ends: an answer, a question back (the agent's, or a 400 to rephrase), or an error. Each tool the
+    // agent calls on the way goes to step.
+    async function outcome(text, step) {
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({conversation, text})
         });
-        const body = await response.json();
-        answer.textContent = response.ok ? body.text : body.detail ?? body.message ?? response.statusText;
+        if (!response.ok) {
+          const body = await response.json();
+          const detail = body.detail ?? body.message ?? response.statusText;
+          return response.status === 400 ? {state: 'question', title: "I can't read that question", text: detail}
+                                         : {state: 'error', title: 'Something went wrong', text: detail};
+        }
+        for await (const {event, data} of events(response)) {
+          if (event === 'step') step(data);
+          if (event === 'error') return {state: 'error', title: 'Something went wrong', text: JSON.parse(data).detail};
+          if (event === 'answer') {
+            const body = JSON.parse(data);
+            return body.clarifying ? {state: 'question', title: 'One question first', text: body.text}
+                                   : {state: 'answer', title: '', text: body.text, calls: body.calls};
+          }
+        }
+        return {state: 'error', title: 'Something went wrong', text: 'The answer stopped before it was complete'};
       } catch (error) {
-        answer.textContent = `The agent is unreachable: ${error.message}`;
+        return {state: 'error', title: 'Vector is unreachable', text: error.message};
       }
-      answer.classList.remove('waiting');
-      if (aloud) speechSynthesis.speak(new SpeechSynthesisUtterance(answer.textContent));
+    }
+
+    // The server-sent events of a response as they arrive, each {event, data}.
+    async function* events(response) {
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffer = '';
+      for (let read = await reader.read(); !read.done; read = await reader.read()) {
+        const blocks = (buffer + read.value).split('\n\n');
+        buffer = blocks.pop();
+        for (const block of blocks) {
+          const fields = Object.fromEntries(block.split('\n')
+              .map(line => [line.slice(0, line.indexOf(':')), line.slice(line.indexOf(':') + 1)]));
+          yield {event: fields.event, data: fields.data};
+        }
+      }
+    }
+
+    // --- The cards: drawn from the rows each tool answered, by fixed rules on the tool and how many airports it covers.
+    const months = month => new Date(`${month}-01T00:00`).toLocaleString('en-US', {month: 'short', year: 'numeric'});
+    const pct = value => value == null ? '–' : value > 0 && value < 0.001 ? '<0.1%'
+                                           : `${(value * 100).toFixed(value < 0.1 ? 1 : 0)}%`;
+    const count = value => value == null ? '–' : value < 1e4 ? value.toLocaleString('en-US')
+        : new Intl.NumberFormat('en-US', {notation: 'compact', maximumFractionDigits: 1}).format(value);
+    const signed = value => value == null ? '–' : `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)}%`;
+    const minutes = value => value == null ? '–' : `${Math.round(value)} min`;
+    const feet = value => value == null ? '–' : `${value.toLocaleString('en-US')} ft`;
+    // What a row covers: its months, or the forecast's fiscal years.
+    const span = row => row.first_month ? `${months(row.first_month)} – ${months(row.last_month)}`
+                      : row.base_year ? `FY${row.base_year} → FY${row.forecast_year}` : '';
+
+    // What each tool shows: its title and figures, the first of them its headline, and its step while Vector searches. `versus` is the US figure a value
+    // compares with (higherIsWorse marks the delta), `of` the count a share is taken of.
+    const VIEWS = {
+      traffic: {title: 'Traffic', step: 'Reading BTS traffic', figures: [
+        {column: 'load_factor', label: 'Seats filled', format: pct},
+        {column: 'shortfall', label: 'Departures not flown', format: pct, of: 'departures_scheduled', unit: 'scheduled'},
+        {column: 'passengers', label: 'Passengers', format: count}]},
+      congestion: {title: 'Delays', step: 'Reading BTS delays', chart: causes, figures: [
+        {column: 'delayed_share', label: 'Arrivals 15+ min late', format: pct, versus: 'us_delayed_share',
+         higherIsWorse: true},
+        {column: 'minutes_per_delayed_arrival', label: 'Per late arrival', format: minutes},
+        {column: 'cancelled_share', label: 'Cancelled', format: pct}]},
+      longHaul: {title: 'Long haul', step: 'Counting long-haul flights', meters: true, note: row => `${count(row.miles)}+ mi`, figures: [
+        {column: 'long_haul_share', label: 'All departures', format: pct, of: 'departures', unit: 'departures'},
+        {column: 'passenger_long_haul_share', label: 'Passenger flights', format: pct, of: 'passenger_departures',
+         unit: 'departures'},
+        {column: 'cargo_long_haul_share', label: 'Cargo flights', format: pct, of: 'cargo_departures',
+         unit: 'departures'}]},
+      growth: {title: 'FAA forecast', step: 'Reading the FAA forecast', figures: [
+        {column: 'yearly_growth', label: 'Boardings growth a year', format: signed},
+        {column: 'added_boardings', label: 'Boardings added', format: count},
+        {column: 'forecast_boardings', label: 'Boardings in the forecast year', format: count}]},
+      count: {title: 'Airports', step: 'Counting the airports', chart: hubs, figures: [
+        {column: 'commercial_airports', label: 'With airline service', format: count},
+        {column: 'airports', label: 'In the FAA register', format: count},
+        {column: 'open_airports', label: 'Open', format: count}]},
+      rank: {title: 'Ranking', step: 'Ranking the airports', render: ranking, headline: rankTile,
+             note: row => `among ${count(row.peers)} airports · rank on each KPI`},
+      runways: {title: 'Runways', step: 'Reading FAA runways', render: runways, headline: runwayTile},
+      flightLimits: {title: 'Flight limits', step: 'Checking FAA flight limits', render: flightLimits, headline: limitTile, note: () => 'set by the FAA'},
+      find: {title: 'Airports', step: 'Finding the airports', render: airports},
+    };
+    const CAUSES = [['nas_share', 'Air traffic system'], ['late_aircraft_share', 'Late aircraft'],
+                    ['carrier_share', 'Airline'], ['weather_share', 'Extreme weather'], ['security_share', 'Security']];
+    // Each KPI as a ranking shows it: its label, a short one for a phone, and its figure.
+    const KPIS = [['GROWTH', 'Growth a year', 'Grow', signed], ['SCALE', 'Passengers added', 'Add', count],
+                  ['HEADROOM', 'Air-traffic delay a flight', 'Delay', value => `${value.toFixed(1)} min`],
+                  ['FARE_PREMIUM', 'Fares vs US average', 'Fare', signed], ['LOAD_FACTOR', 'Seats filled', 'Full', pct]];
+    const HUBS = {LARGE: 'Large hubs', MEDIUM: 'Medium hubs', SMALL: 'Small hubs', NONHUB: 'Non-hubs'};
+    const RANKED_SHOWN = 10;
+
+    // The cards of an answer, then its sources: find's list only when it is all the answer has.
+    function figures(calls) {
+      const tools = byTool(calls);
+      if (tools.size === 0) return [];
+      const names = new Map((tools.get('find')?.rows ?? []).map(row => [row.airport_id, row.display_name ?? row.name]));
+      const shown = [...tools].filter(([tool, evidence]) => VIEWS[tool] && evidence.rows.length > 0
+                                                            && (tool !== 'find' || tools.size === 1));
+      const covered = new Set(shown.flatMap(([, evidence]) => evidence.rows.map(row => row.airport_id)).filter(Boolean));
+      const cards = covered.size <= 1 && shown.length > 1 ? headlines(shown)
+                  : shown.length > 1 ? leading(shown, names)
+                  : shown.map(([tool, evidence]) => card(tool, evidence, names));
+      return [...cards, sources([...tools.values()])];
+    }
+
+    // The rows each tool answered, merged when the model called it twice, a row it answered twice once (a retry).
+    function byTool(calls) {
+      const tools = new Map();
+      for (const {tool, evidence} of calls) {
+        const seen = tools.get(tool) ?? {rows: [], sources: [], definitions: [], limitations: []};
+        const known = new Set(seen.rows.map(row => JSON.stringify(row)));
+        const rows = evidence.rows.filter(row => !known.has(JSON.stringify(row)));
+        tools.set(tool, {rows: [...seen.rows, ...rows], sources: [...seen.sources, ...evidence.sources],
+                         definitions: [...seen.definitions, ...evidence.definitions],
+                         limitations: [...seen.limitations, ...evidence.limitations]});
+      }
+      return tools;
+    }
+
+    // Several airports, several tools: the ranking (or the first card) open; each other tool a tile saying what its
+    // card holds, which opens the card.
+    function leading(shown, names) {
+      const lead = shown.find(([tool]) => tool === 'rank') ?? shown[0];
+      return [card(...lead, names), ...headlines(shown.filter(entry => entry !== lead), names, topic)];
+    }
+
+    // A strip of a tile per tool, by default its headline figure; a tile opens the tool's card below the strip.
+    function headlines(shown, names = new Map(), face = headline) {
+      const cards = shown.map(([tool, evidence]) => Object.assign(card(tool, evidence, names), {hidden: true}));
+      const strip = el('div', {className: 'strip'}, ...shown.map(([tool, evidence], i) => {
+        const front = face(VIEWS[tool], evidence, i);
+        const open = el('span', {className: 'open'}, `${front.dataset.open} ▾`);
+        const button = el('button', {type: 'button', className: front.className}, ...front.childNodes, open);
+        button.setAttribute('aria-expanded', 'false');
+        button.addEventListener('click', () => {
+          cards[i].hidden = !cards[i].hidden;
+          button.setAttribute('aria-expanded', String(!cards[i].hidden));
+          open.textContent = `${front.dataset.open} ${cards[i].hidden ? '▾' : '▴'}`;
+        });
+        return button;
+      }));
+      return [strip, ...cards];
+    }
+
+    // One airport: the tool's headline figure, the first in cyan, the second in gold.
+    function headline(view, evidence, i) {
+      const front = view.headline ? view.headline(evidence.rows)
+                                  : tile(view.figures[0], evidence.rows[0], ['cyan', 'gold'][i] ?? '', i === 0);
+      front.dataset.open = view.title;
+      return front;
+    }
+
+    // Several airports: what the tool's card holds, for how many airports and months.
+    function topic(view, evidence) {
+      const airports = new Set(evidence.rows.map(row => row.airport_id)).size;
+      const front = el('div', {className: 'tile'}, el('span', {className: 'value'}, view.title),
+        el('span', {className: 'label'}, view.figures?.map(figure => figure.label).join(' · ') ?? view.note?.() ?? ''),
+        el('span', {className: 'context'}, [`${airports} airports`, span(evidence.rows[0])].filter(Boolean).join(' · ')));
+      front.dataset.open = 'Show';
+      return front;
+    }
+
+    function card(tool, evidence, names = new Map()) {
+      const view = VIEWS[tool];
+      const [row] = evidence.rows;
+      const note = [span(row), view.note?.(row)].filter(Boolean).join(' · ');
+      const box = el('section', {className: 'tool'}, el('h3', {}, view.title, ' ', el('span', {}, note)));
+      if (view.render) {
+        box.append(...view.render(evidence.rows, names));
+      } else if (evidence.rows.length === 1) {
+        box.append(el('div', {className: 'strip'},
+          ...view.figures.map((figure, i) => tile(figure, row, i === 0 ? 'cyan' : '', false, view.meters))));
+      } else {
+        box.append(comparison(view, evidence.rows, names));
+      }
+      if (view.chart) box.append(...view.chart(evidence.rows));
+      return box;
+    }
+
+    function tile(figure, row, accent, coded, meter) {
+      const value = row[figure.column];
+      const versus = figure.versus ? row[figure.versus] : null;
+      const points = value != null && versus != null ? Math.round((value - versus) * 100) : 0;
+      return el('div', {className: `tile ${accent}`},
+        el('span', {className: 'value'}, coded ? el('span', {className: 'code'}, `${row.airport_id} →`) : null,
+           figure.format(value)),
+        el('span', {className: 'label'}, figure.label),
+        versus != null ? el('span', {className: 'context'}, `US ${figure.format(versus)} `,
+          points !== 0 ? el('span', {className: `delta ${(points > 0) === figure.higherIsWorse ? 'worse' : ''}`},
+                            `${points > 0 ? '▲' : '▼'} ${Math.abs(points)} pts`) : null) : null,
+        figure.of ? el('span', {className: 'context'}, `of ${count(row[figure.of])} ${figure.unit}`) : null,
+        meter ? el('div', {className: 'meter', role: 'img', ariaLabel: `${figure.format(value)} of ${figure.unit}`},
+                   el('i', {style: `width:${(value ?? 0) * 100}%`})) : null);
+    }
+
+    // Two or more airports: a row per airport, a column per figure, and the US figure as the last row.
+    function comparison(view, rows, names) {
+      const head = el('tr', {}, el('th', {}, 'Airport'), ...view.figures.map(figure => el('th', {}, figure.label)));
+      const body = rows.map(row => el('tr', {}, el('td', {}, airport(row.airport_id, names)),
+        ...view.figures.map(figure => el('td', {}, figure.format(row[figure.column])))));
+      const reference = view.figures.some(figure => figure.versus) ? el('tr', {className: 'reference'},
+        el('td', {}, 'US, all airports'),
+        ...view.figures.map(figure => el('td', {}, figure.versus ? figure.format(rows[0][figure.versus]) : ''))) : null;
+      return el('div', {className: 'scroll'}, el('table', {}, el('thead', {}, head), el('tbody', {}, ...body, reference)));
+    }
+
+    const airport = (id, names) => names.has(id) ? `${names.get(id)} (${id})` : id;
+
+    // Delay causes: each airport's delay minutes as one bar in five parts, its code beside it when there are several.
+    function causes(rows) {
+      const bars = rows.length === 1 ? [segments(rows[0])]
+        : rows.map(row => el('div', {className: 'labelled'}, row.airport_id, segments(row)));
+      return [el('div', {className: 'context'}, 'Delay minutes by cause'), ...bars, legend()];
+    }
+
+    // A part's share is printed on it where it fits.
+    function segments(row) {
+      const parts = CAUSES.map(([column, name], i) => ({name, share: row[column], colour: `var(--cause-${i + 1})`}));
+      return el('div', {className: 'segments', role: 'img',
+                        ariaLabel: `${row.airport_id}: ${parts.map(part => `${part.name} ${pct(part.share)}`).join(', ')}`},
+        ...parts.filter(part => part.share > 0).map(part => el('i', {
+          title: `${part.name}: ${pct(part.share)}`, style: `flex:${part.share} 1 0;background:${part.colour}`},
+          part.share >= 0.15 ? pct(part.share) : null)));
+    }
+
+    function legend() {
+      return el('ul', {className: 'legend'}, ...CAUSES.map(([, name], i) => swatch(name, `var(--cause-${i + 1})`)));
+    }
+
+    function swatch(name, colour) {
+      const item = el('li', {}, name);
+      item.style.setProperty('--swatch', colour);
+      return item;
+    }
+
+    function hubs([row]) {
+      const parts = [['large_hubs', HUBS.LARGE], ['medium_hubs', HUBS.MEDIUM], ['small_hubs', HUBS.SMALL],
+                     ['nonhubs', HUBS.NONHUB]]
+        .map(([column, name], i) => ({name, value: row[column], colour: `var(--cause-${i + 1})`}));
+      const bar = el('div', {className: 'segments', role: 'img',
+                             ariaLabel: parts.map(part => `${part.name} ${part.value}`).join(', ')},
+        ...parts.filter(part => part.value > 0).map(part => el('i', {title: `${part.name}: ${part.value}`,
+          style: `flex:${part.value} 1 0;background:${part.colour}`}, String(part.value))));
+      return [el('div', {className: 'context'}, 'Airports with airline service by FAA hub size'), bar,
+              el('ul', {className: 'legend'}, ...parts.map(part => swatch(part.name, part.colour)))];
+    }
+
+    function rankTile(rows) {
+      const [score] = rows;
+      return el('div', {className: 'tile'},
+        el('span', {className: 'value'}, `#${score.rank}`),
+        el('span', {className: 'label'}, `of ${count(score.peers)} airports`),
+        el('span', {className: 'context'}, `score ${Math.round(score.score)}`));
+    }
+
+    // The FAA's limit in the words an analyst acts on: what it does to the number of flights.
+    const LIMITS = {
+      CAPPED: ['capped', 'Capped', "airlines can't add flights, so growth must come from bigger or fuller planes"],
+      MANAGED: ['managed', 'Managed at peak hours', 'flights can grow, mostly outside the busiest hours'],
+      TERMINAL: ['managed', 'Managed at its international terminal',
+                 "international flights are fitted around the terminal's busiest hours; other flights can grow"],
+      NONE: ['none', 'No cap', 'airlines can add flights as demand grows']};
+
+    function limitTile([row]) {
+      const [, label, meaning] = LIMITS[row.flight_limit];
+      return el('div', {className: 'tile'}, el('span', {className: 'value'}, label),
+        el('span', {className: 'label'}, 'Flight limit'), el('span', {className: 'context'}, meaning));
+    }
+
+    function flightLimits(rows, names) {
+      return [el('div', {className: 'scroll'}, el('table', {className: 'limits'},
+        el('thead', {}, el('tr', {}, el('th', {}, 'Airport'), el('th', {}, 'Flight limit'))),
+        el('tbody', {}, ...rows.map(row => {
+          const [kind, label, meaning] = LIMITS[row.flight_limit];
+          return el('tr', {}, el('td', {}, airport(row.airport_id, names)),
+            el('td', {}, el('span', {className: `limit ${kind}`}, label), ` ${meaning}`));
+        }))))];
+    }
+
+    function runwayTile(rows) {
+      return el('div', {className: 'tile'},
+        el('span', {className: 'value'}, String(rows.length)),
+        el('span', {className: 'label'}, 'Runways'),
+        el('span', {className: 'context'}, `longest ${feet(Math.max(...rows.map(row => row.length_ft)))}`));
+    }
+
+    // 1-4 airports: a column per airport, a row per KPI, the overall place last; 5 or more: a row per airport, a column
+    // per KPI, the top ten first.
+    function ranking(rows) {
+      return rows.length > 4 ? wide(rows) : [tall(rows)];
+    }
+
+    function wide(rows) {
+      const head = el('tr', {}, el('th', {}, '#'), el('th', {}, 'Airport'), el('th', {}, 'Score'),
+        ...KPIS.map(([kpi, long, short]) => el('th', {}, el('span', {className: 'long'}, long),
+          el('span', {className: 'short'}, short), el('small', {}, `of ${part(rows[0], kpi).peers}`))));
+      const body = rows.map((row, i) => el('tr', {hidden: i >= RANKED_SHOWN},
+        el('td', {className: 'place'}, `#${row.rank}`),
+        el('td', {className: 'airport'}, el('span', {className: 'code'}, row.airport_id),
+           el('span', {className: 'name'}, row.name)),
+        el('td', {className: 'score'}, String(Math.round(row.score))),
+        ...KPIS.map(([kpi, , , format]) => el('td', {}, cell(part(row, kpi), format)))));
+      const table = el('table', {className: 'ranking wide'},
+        el('colgroup', {}, el('col', {className: 'place'}), el('col', {className: 'airport'}),
+           el('col', {className: 'score'}), ...KPIS.map(() => el('col'))),
+        el('thead', {}, head), el('tbody', {}, ...body));
+      if (rows.length <= RANKED_SHOWN) return [table];
+      const more = el('button', {type: 'button', className: 'more'}, `Show ${rows.length - RANKED_SHOWN} more`);
+      more.addEventListener('click', () => {
+        table.querySelectorAll('[hidden]').forEach(row => row.hidden = false);
+        more.remove();
+      });
+      return [table, more];
+    }
+
+    function tall(rows) {
+      const alone = rows.length === 1;
+      return el('table', {className: 'ranking tall'},
+        el('colgroup', {}, el('col', {className: 'label'}), ...rows.map(() => el('col'))),
+        el('thead', {}, el('tr', {}, el('th', {}), ...rows.map(row => el('th', {}, el('span', {className: 'code'},
+          row.airport_id), el('small', {}, `${count(row.boardings)} passengers`))))),
+        el('tbody', {},
+          ...KPIS.map(([kpi, long, , format]) => el('tr', {}, el('td', {className: 'label'}, long),
+            ...rows.map(row => el('td', {}, cell(part(row, kpi), format, alone))))),
+          el('tr', {className: 'total'}, el('td', {className: 'label'}, 'Overall'),
+            ...rows.map(row => el('td', {}, `#${row.rank} of ${count(row.peers)} · ${Math.round(row.score)}`)))));
+    }
+
+    const part = (row, kpi) => row.contributions.find(contribution => contribution.kpi === kpi);
+
+    // A KPI's rank among the airports ranked together, green above the middle, red below, its figure under it.
+    function cell(part, format, counted) {
+      if (part.value == null) return el('div', {className: 'cell none'}, el('span', {className: 'rank'}, 'no data'));
+      const kind = part.percentile > .5 ? 'up' : part.percentile < .5 ? 'down' : 'none';
+      return el('div', {className: `cell ${kind}`, title: `#${part.rank} of ${part.peers}`},
+        el('span', {className: 'rank'}, `${{up: '▲', down: '▼', none: '·'}[kind]} ${part.rank}`,
+           counted ? ` of ${part.peers}` : ''),
+        el('span', {className: 'figure'}, format(part.value)));
+    }
+
+    function runways(rows, names) {
+      const several = new Set(rows.map(row => row.airport_id)).size > 1;
+      return [table([...(several ? ['Airport'] : []), 'Runway', 'Length', 'Width', 'Surface'], rows.map(row => [
+        ...(several ? [airport(row.airport_id, names)] : []), row.runway_id, feet(row.length_ft), feet(row.width_ft),
+        row.surface]))];
+    }
+
+    function airports(rows) {
+      return [table(['Airport', 'Code', 'City', 'State', 'Hub size', 'Boardings'], rows.map(row => [
+        row.display_name ?? row.name, row.airport_id, row.city, row.state, row.hub, count(row.boardings)]))];
+    }
+
+    function table(columns, rows) {
+      return el('div', {className: 'scroll'}, el('table', {},
+        el('thead', {}, el('tr', {}, ...columns.map(column => el('th', {}, column)))),
+        el('tbody', {}, ...rows.map(cells => el('tr', {}, ...cells.map(cell => el('td', {}, cell ?? '–')))))));
+    }
+
+    // Each source once, cited by its title and linked to its publisher's page, with the period it loaded or the
+    // problem that left it out; what the figures count and cannot say behind a toggle, as "About this data".
+    function sources(evidences) {
+      const loaded = new Map(evidences.flatMap(evidence => evidence.sources).map(source => [source.name, source]));
+      const notes = kind => [...new Set(evidences.flatMap(evidence => evidence[kind]))];
+      const groups = [['Definitions', notes('definitions')], ['Limitations', notes('limitations')]]
+        .filter(([, items]) => items.length);
+      const count = groups.reduce((sum, [, items]) => sum + items.length, 0);
+      const period = ({period, problem}) => problem ? `not loaded: ${problem}` : !period ? 'not loaded'
+        : period === 'current' ? 'current' : period.endsWith('-01-01') ? period.slice(0, 4)
+        : new Date(`${period}T00:00`).toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'});
+      return el('footer', {className: 'sources'}, el('span', {}, 'Sources'),
+        ...[...loaded.values()].map(source => el('span', {},
+          el('a', {href: source.page, target: '_blank', rel: 'noopener noreferrer'}, source.title), ` · ${period(source)}`)),
+        count ? el('details', {}, el('summary', {}, `About this data (${count})`),
+                   ...groups.flatMap(([heading, items]) => [el('h4', {}, heading),
+                                                             el('ul', {}, ...items.map(item => el('li', {}, item)))])) : null);
+    }
+
+    // The model's markdown: paragraphs, "- " lists and **bold**, built as nodes so no markup from the model runs.
+    function prose(markdown) {
+      const blocks = [];
+      let list = null;
+      for (const line of markdown.split('\n').map(line => line.trim()).filter(Boolean)) {
+        const item = line.match(/^[-*] (.*)/);
+        if (item) {
+          if (!list) blocks.push(list = el('ul'));
+          list.append(el('li', {}, ...inline(item[1])));
+        } else {
+          list = null;
+          blocks.push(el('p', {}, ...inline(line)));
+        }
+      }
+      return blocks;
+    }
+    const inline = text => text.split(/\*\*(.+?)\*\*/).map((part, i) => i % 2 ? el('strong', {}, part) : part);
+
+    function el(tag, properties = {}, ...children) {
+      const {role, ariaLabel, style, ...rest} = properties;
+      const node = Object.assign(document.createElement(tag), rest);
+      if (role) node.setAttribute('role', role);
+      if (ariaLabel) node.setAttribute('aria-label', ariaLabel);
+      if (style) node.setAttribute('style', style);
+      node.append(...children.filter(child => child != null && child !== false));
+      return node;
     }
 
     form.addEventListener('submit', event => {
@@ -95,21 +893,96 @@
       question.value = '';
       spoken = false;
     });
-    document.querySelectorAll('#examples button').forEach(button =>
-      button.addEventListener('click', () => ask(button.textContent)));
+    document.querySelectorAll('[data-open]').forEach(button =>
+      button.addEventListener('click', () => document.getElementById(button.dataset.open).showModal()));
+    document.getElementById('restart').addEventListener('click', () => location.reload());
+    const planes = document.getElementById('planes');
+    planes.addEventListener('change', () => document.body.classList.toggle('still', !planes.checked));
+
+    // The planes fly world.svg's routes. At an airport a plane takes a random route from it, never the one it came by,
+    // and turns back where no other route starts.
+    const sky = document.getElementById('sky');
+    const SPEED = 12; // map units a second
+    const COLOURS = ['#6a9be0', '#e9ad5c'];
+    fetch('world.svg').then(response => response.text()).then(world => {
+      const airport = point => `${Math.round(point.x)},${Math.round(point.y)}`;
+      const routes = Array.from(new DOMParser().parseFromString(world, 'image/svg+xml').querySelectorAll('.route'),
+        route => {
+          const path = sky.appendChild(document.createElementNS(sky.namespaceURI, 'path'));
+          path.setAttribute('d', route.getAttribute('d'));
+          path.setAttribute('fill', 'none');
+          const length = path.getTotalLength();
+          return {path, length, ends: [airport(path.getPointAtLength(0)), airport(path.getPointAtLength(length))]};
+        });
+      const flights = Array.from({length: 7}, (_, i) => {
+        const plane = sky.appendChild(document.createElementNS(sky.namespaceURI, 'use'));
+        plane.setAttribute('href', '#plane');
+        plane.setAttribute('fill', COLOURS[i % COLOURS.length]);
+        plane.setAttribute('opacity', '.85');
+        const route = routes[Math.floor(Math.random() * routes.length)];
+        return {plane, route, at: Math.random() * route.length, forward: Math.random() < .5};
+      });
+      let last = performance.now();
+      requestAnimationFrame(function fly(now) {
+        const step = (now - last) / 1000 * SPEED;
+        last = now;
+        if (sky.checkVisibility()) flights.forEach(flight => move(flight, step));
+        requestAnimationFrame(fly);
+      });
+
+      function move(flight, step) {
+        flight.at += flight.forward ? step : -step;
+        if (flight.at < 0 || flight.at > flight.route.length) land(flight);
+        const {path, length} = flight.route;
+        const here = path.getPointAtLength(flight.at);
+        const ahead = path.getPointAtLength(Math.min(Math.max(flight.at + (flight.forward ? 1 : -1), 0), length));
+        const heading = Math.atan2(ahead.y - here.y, ahead.x - here.x) * 180 / Math.PI;
+        flight.plane.setAttribute('transform', `translate(${here.x} ${here.y}) rotate(${heading}) scale(1.25)`);
+      }
+
+      function land(flight) {
+        const at = flight.route.ends[flight.forward ? 1 : 0];
+        const onward = routes.filter(route => route !== flight.route && route.ends.includes(at));
+        if (onward.length === 0) {
+          flight.forward = !flight.forward;
+        } else {
+          flight.route = onward[Math.floor(Math.random() * onward.length)];
+          flight.forward = flight.route.ends[0] === at;
+        }
+        flight.at = flight.forward ? 0 : flight.route.length;
+      }
+    });
 
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Recognition) {
       const listen = document.getElementById('listen');
+      const hint = document.getElementById('hint');
       const recognition = new Recognition();
       recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      let listening = false;
       recognition.onresult = event => {
-        question.value = event.results[0][0].transcript;
-        spoken = true;
-        form.requestSubmit();
+        question.value = Array.from(event.results, result => result[0].transcript.trim()).join(' ');
       };
-      listen.hidden = false;
-      listen.addEventListener('click', () => recognition.start());
+      // One question per session: sent when listening ends, so pauses and the spoken answer never reach it.
+      recognition.onend = () => {
+        listening = false;
+        listen.classList.remove('listening');
+        hint.textContent = 'Tap to speak';
+        spoken = question.value.trim() !== '';
+        if (spoken) form.requestSubmit();
+      };
+      listen.hidden = hint.hidden = false;
+      listen.addEventListener('click', () => {
+        if (listening) return recognition.stop();
+        speechSynthesis.cancel();
+        question.value = '';
+        listening = true;
+        listen.classList.add('listening');
+        hint.textContent = 'Listening… tap to stop';
+        recognition.start();
+      });
     }
   </script>
 </body>

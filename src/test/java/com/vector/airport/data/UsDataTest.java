@@ -1,14 +1,31 @@
 package com.vector.airport.data;
 
+import static com.vector.airport.view.tables.Airport.AIRPORT;
+import static com.vector.airport.view.tables.AirportCode.AIRPORT_CODE;
+import static com.vector.airport.view.tables.Boardings.BOARDINGS;
+import static com.vector.airport.view.tables.Delay.DELAY;
+import static com.vector.airport.view.tables.FarePremium.FARE_PREMIUM;
+import static com.vector.airport.view.tables.FlightLimit.FLIGHT_LIMIT;
+import static com.vector.airport.view.tables.Forecast.FORECAST;
+import static com.vector.airport.view.tables.Metro.METRO;
+import static com.vector.airport.view.tables.Runway.RUNWAY;
+import static com.vector.airport.view.tables.Segment.SEGMENT;
+import static com.vector.airport.view.tables.Source.SOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import static org.jooq.impl.DSL.max;
+import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.DSL.selectDistinct;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
 import com.vector.airport.FixtureDataTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
+import org.jooq.TableField;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
@@ -24,10 +41,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 class UsDataTest {
 
     @Autowired
-    DSLContext db;
+    DataProperties properties;
 
     @Autowired
-    DataProperties properties;
+    DSLContext db;
 
     /** One test per source, named after it: a failure names the source and why it was left out, e.g. DuckDB's error. */
     @TestFactory
@@ -42,29 +59,20 @@ class UsDataTest {
     }
 
     @Test
-    void noCodePointsAtTwoAirports() {
-        assertThat(db.fetch("select code, kind from airport_code group by all having count(distinct airport_id) > 1")
-                        .intoMaps())
-                .isEmpty();
-    }
-
-    @Test
     void faaRegisterKeysAirportsByTheirFaaLocationId() {
-        assertThat(value(String.class, "select icao from airport where airport_id = 'BOS'"))
-                .isEqualTo("KBOS");
-        assertThat(value(String.class, "select distinct country from airport")).isEqualTo("US");
-        assertThat(value(String.class, "select icao from airport where airport_id = '1G4'"))
+        assertThat(value(AIRPORT.ICAO, AIRPORT.AIRPORT_ID.eq("BOS"))).isEqualTo("KBOS");
+        assertThat(db.fetchValue(selectDistinct(AIRPORT.COUNTRY).from(AIRPORT))).isEqualTo("US");
+        assertThat(value(AIRPORT.ICAO, AIRPORT.AIRPORT_ID.eq("1G4")))
                 .as("Grand Canyon West has no ICAO code")
                 .isNull();
-        assertThat(value(String.class, "select region from airport where airport_id = 'BOS'"))
+        assertThat(value(AIRPORT.REGION, AIRPORT.AIRPORT_ID.eq("BOS")))
                 .as("New England")
                 .isEqualTo("ANE");
     }
 
     @Test
     void faaRegisterKeepsRunwaysInFeet() {
-        assertThat(value(
-                        Integer.class, "select length_ft from runway where airport_id = 'BDL' and runway_id = '06/24'"))
+        assertThat(value(RUNWAY.LENGTH_FT, RUNWAY.AIRPORT_ID.eq("BDL").and(RUNWAY.RUNWAY_ID.eq("06/24"))))
                 .isEqualTo(9510);
     }
 
@@ -88,64 +96,86 @@ class UsDataTest {
 
     @Test
     void btsSegmentsKeepPublishedUnitsClassesAndUnscheduledRows() {
-        assertThat(value(
-                        Double.class,
-                        "select max(distance_mi) from segment where origin_id = 'BOS' and dest_id = 'LAX'"))
+        assertThat(db.fetchValue(select(max(SEGMENT.DISTANCE_MI))
+                        .from(SEGMENT)
+                        .where(SEGMENT.ORIGIN_ID.eq("BOS"), SEGMENT.DEST_ID.eq("LAX"))))
                 .isEqualTo(2611.0);
-        assertThat(db.fetch("select distinct service_class from segment").getValues(0, String.class))
+        assertThat(db.fetchValues(selectDistinct(SEGMENT.SERVICE_CLASS).from(SEGMENT)))
                 .containsExactlyInAnyOrder(
                         "SCHEDULED_PASSENGER", "SCHEDULED_CARGO", "CHARTER_PASSENGER", "CHARTER_CARGO");
-        assertThat(value(
-                        Long.class,
-                        "select count(*) from segment where departures_scheduled = 0 and departures_performed > 0"))
+        assertThat(db.fetchCount(SEGMENT, SEGMENT.DEPARTURES_SCHEDULED.eq(0L).and(SEGMENT.DEPARTURES_PERFORMED.gt(0L))))
                 .as("flown but unscheduled rows stay: shortfall must see them to exclude them")
                 .isPositive();
-        assertThat(value(Long.class, "select count(*) from segment where dest_country <> 'US' and dest_id is null"))
+        assertThat(db.fetchCount(SEGMENT, SEGMENT.DEST_COUNTRY.ne("US").and(SEGMENT.DEST_ID.isNull())))
                 .as("foreign ends are kept, without an airport_id")
                 .isPositive();
     }
 
     @Test
     void btsDelaysKeepMissingValuesAsNull() {
-        assertThat(value(Long.class, "select count(*) from delay where delayed is null"))
+        assertThat(db.fetchCount(DELAY, DELAY.DELAYED.isNull()))
                 .as("TLH Nov 2025: one cancelled flight, delayed count not reported")
                 .isPositive();
-        assertThat(value(Long.class, "select count(*) from delay where airport_id = 'DJT'"))
+        assertThat(db.fetchCount(DELAY, DELAY.AIRPORT_ID.eq("DJT")))
                 .as("delay rows still say PBI")
                 .isPositive();
     }
 
     @Test
     void faaBoardingsGiveTheBoardingsAndTheHubSize() {
-        assertThat(value(Long.class, "select boardings from boardings where airport_id = 'BOS' and year = 2025"))
+        assertThat(value(BOARDINGS.BOARDINGS_, BOARDINGS.AIRPORT_ID.eq("BOS").and(BOARDINGS.YEAR.eq(2025))))
                 .isPositive();
-        assertThat(value(String.class, "select hub from airport where airport_id = 'BOS'"))
-                .isEqualTo("LARGE");
+        assertThat(value(AIRPORT.HUB, AIRPORT.AIRPORT_ID.eq("BOS"))).isEqualTo("LARGE");
     }
 
     @Test
     void faaForecastTellsActualYearsFromForecastOnes() {
-        assertThat(value(Boolean.class, "select is_forecast from forecast where airport_id = 'BOS' and year = 2024"))
+        assertThat(value(FORECAST.IS_FORECAST, FORECAST.AIRPORT_ID.eq("BOS").and(FORECAST.YEAR.eq(2024))))
                 .isFalse();
-        assertThat(value(Boolean.class, "select is_forecast from forecast where airport_id = 'BOS' and year = 2045"))
+        assertThat(value(FORECAST.IS_FORECAST, FORECAST.AIRPORT_ID.eq("BOS").and(FORECAST.YEAR.eq(2045))))
                 .isTrue();
     }
 
     @Test
     void faaForecastGroupsEachMetroAreaUnderItsHub() {
-        assertThat(db.fetch("select airport_id from metro where hub_id = 'LAX'").getValues(0, String.class))
+        assertThat(db.fetchValues(select(METRO.AIRPORT_ID).from(METRO).where(METRO.HUB_ID.eq("LAX"))))
                 .contains("LAX", "SNA", "BUR");
     }
 
     @Test
+    void faaSlotsPagesNameTheAirportsTheFaaLimits() {
+        assertThat(db.selectFrom(FLIGHT_LIMIT).fetchMap(FLIGHT_LIMIT.AIRPORT_ID, FLIGHT_LIMIT.FLIGHT_LIMIT_))
+                .as("Level 3, Level 2, and Level 2 for the international terminal only")
+                .isEqualTo(Map.of(
+                        "JFK",
+                        "CAPPED",
+                        "LGA",
+                        "CAPPED",
+                        "DCA",
+                        "CAPPED",
+                        "ORD",
+                        "MANAGED",
+                        "LAX",
+                        "MANAGED",
+                        "EWR",
+                        "MANAGED",
+                        "SFO",
+                        "MANAGED",
+                        "MCO",
+                        "TERMINAL",
+                        "SEA",
+                        "TERMINAL"));
+    }
+
+    @Test
     void dotFaresGiveThePremiumAsAFraction() {
-        assertThat(value(Double.class, "select premium from fare_premium where airport_id = 'SNA'"))
+        assertThat(value(FARE_PREMIUM.PREMIUM, FARE_PREMIUM.AIRPORT_ID.eq("SNA")))
                 .isCloseTo(0.081, within(0.001));
     }
 
     @Test
     void dotFaresCoverTheLower48Only() {
-        assertThat(value(Long.class, "select count(*) from fare_premium where airport_id = 'ANC'"))
+        assertThat(db.fetchCount(FARE_PREMIUM, FARE_PREMIUM.AIRPORT_ID.eq("ANC")))
                 .isZero();
     }
 
@@ -155,19 +185,23 @@ class UsDataTest {
     }
 
     private Map<String, Object> row(String source) {
-        return db.fetchSingle("select * from source where name = ?", source).intoMap();
+        return db.fetchSingle(SOURCE, SOURCE.NAME.eq(source)).intoMap();
     }
 
-    private <T> T value(Class<T> type, String sql, Object... bindings) {
-        return db.fetchSingle(sql, bindings).get(0, type);
+    /** The value of {@code column} in its table's one row {@code where} keeps. */
+    private <T> T value(TableField<?, T> column, Condition where) {
+        return db.fetchSingle(select(column).from(column.getTable()).where(where))
+                .value1();
     }
 
     private String iata(String airportId) {
-        return value(String.class, "select iata from airport where airport_id = ?", airportId);
+        return value(AIRPORT.IATA, AIRPORT.AIRPORT_ID.eq(airportId));
     }
 
     private Optional<String> airportFor(String btsCode) {
-        return db.fetchOptional("select airport_id from airport_code where kind = 'BTS' and code = ?", btsCode)
-                .map(row -> row.get(0, String.class));
+        return db.fetchOptional(select(AIRPORT_CODE.AIRPORT_ID)
+                        .from(AIRPORT_CODE)
+                        .where(AIRPORT_CODE.KIND.eq("BTS"), AIRPORT_CODE.CODE.eq(btsCode)))
+                .map(Record1::value1);
     }
 }

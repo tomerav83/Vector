@@ -1,16 +1,23 @@
 package com.vector.airport.data;
 
+import static com.vector.airport.view.tables.Source.SOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.select;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
-import com.vector.airport.data.source.Downloader;
-import com.vector.airport.data.source.Downloaders;
-import com.vector.airport.data.source.FakeSite;
+import com.vector.airport.data.downloader.Downloaders;
+import com.vector.airport.data.format.FormatsTest;
+import com.vector.airport.data.lock.Lock;
+import com.vector.airport.data.lock.LockedFile;
+import com.vector.airport.data.lock.LockedSource;
 import com.vector.airport.data.source.Form;
 import com.vector.airport.data.source.Source;
 import com.vector.airport.data.source.SourceFile;
-import com.vector.airport.data.source.Web;
+import com.vector.airport.data.web.FakeSite;
+import com.vector.airport.data.web.Web;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
@@ -102,7 +109,7 @@ class SnapshotTest {
 
     @Test
     void startDownloadsTheLockedFileAsTheLockNamesIt() throws IOException {
-        SourceFile moved = new SourceFile(Downloader.STORED, site.url("/moved.csv"), Form.NONE);
+        SourceFile moved = new SourceFile(SourceFile.STORED, site.url("/moved.csv"), Form.NONE, SourceFile.TABLE);
         new Lock(Map.of("stats", new LockedSource(LAST_YEAR, List.of(new LockedFile(moved, fingerprint("v1"))))))
                 .write(dir.resolve("sources.lock.json"));
         site.files.put(moved.url(), csv("v1"));
@@ -114,6 +121,15 @@ class SnapshotTest {
     }
 
     @Test
+    void frozenStartFailsNamingTheSourcesTheLockLacksBeforeDownloading() throws IOException {
+        publish("stats", LAST_YEAR, "v1");
+
+        assertThatThrownBy(() -> snapshot(false, true).afterSingletonsInstantiated())
+                .hasMessageContaining("has no entry for [list, segments, stats]");
+        assertThat(site.asked).isEmpty();
+    }
+
+    @Test
     void refreshMovesToTheNewestPeriodAndRewritesTheLock() throws IOException {
         publish("stats", LAST_YEAR, "v1");
         start();
@@ -122,6 +138,31 @@ class SnapshotTest {
         refresh();
 
         assertThat(lock().find("stats")).contains(locked(THIS_YEAR, "v2"));
+        assertThat(stats()).containsExactly("v2");
+    }
+
+    @Test
+    void refreshFlagMakesTheStartARefresh() throws IOException {
+        publish("stats", LAST_YEAR, "v1");
+        start();
+        publish("stats", THIS_YEAR, "v2");
+
+        snapshot(true).afterSingletonsInstantiated();
+
+        assertThat(lock().find("stats")).contains(locked(THIS_YEAR, "v2"));
+    }
+
+    @Test
+    void refreshThroughTheEndpointAnswersWithTheNewSourceTable() throws IOException {
+        publish("stats", LAST_YEAR, "v1");
+        Snapshot snapshot = snapshot(false);
+        snapshot.afterSingletonsInstantiated();
+        publish("stats", THIS_YEAR, "v2");
+
+        assertThat(new DataEndpoint(snapshot, db).refresh())
+                .filteredOn(row -> row.get("name").equals("stats"))
+                .extracting(row -> row.get("period"))
+                .containsExactly(THIS_YEAR);
         assertThat(stats()).containsExactly("v2");
     }
 
@@ -205,40 +246,6 @@ class SnapshotTest {
     }
 
     @Test
-    void problemOfASiteThatCannotBeReachedNamesTheException() throws IOException {
-        SourceFile unreachable =
-                new SourceFile(Downloader.STORED, "http://localhost:%d/stats.csv".formatted(closedPort()), Form.NONE);
-        new Lock(Map.of("stats", new LockedSource(LAST_YEAR, List.of(new LockedFile(unreachable, fingerprint("v1"))))))
-                .write(dir.resolve("sources.lock.json"));
-
-        start();
-
-        assertThat(problem("stats")).contains("Exception"); // the JDK's has no message: it read "null"
-    }
-
-    @Test
-    void startThatChangesNothingLeavesTheLockAlone() throws IOException {
-        publish("stats", LAST_YEAR, "v1");
-        start();
-        Files.setLastModifiedTime(dir.resolve("sources.lock.json"), FileTime.fromMillis(0));
-
-        start();
-
-        assertThat(Files.getLastModifiedTime(dir.resolve("sources.lock.json"))).isEqualTo(FileTime.fromMillis(0));
-    }
-
-    @Test
-    void refreshFlagMakesTheStartARefresh() throws IOException {
-        publish("stats", LAST_YEAR, "v1");
-        start();
-        publish("stats", THIS_YEAR, "v2");
-
-        snapshot(true).afterSingletonsInstantiated();
-
-        assertThat(lock().find("stats")).contains(locked(THIS_YEAR, "v2"));
-    }
-
-    @Test
     void refreshKeepsTheLockedVersionAndItsCachedFileWhenTheNewestFailsItsCheck() throws IOException {
         publish("stats", LAST_YEAR, "v1");
         start();
@@ -251,30 +258,6 @@ class SnapshotTest {
                 .extracting(LockedFile::fingerprint)
                 .containsExactly(fingerprint("v1"));
         assertThat(cached()).containsExactly(csv("v1"));
-    }
-
-    @Test
-    void everyBuildIsAnnouncedWithWhatItLoaded() throws IOException {
-        site.down.add(url("list", Source.CURRENT));
-        publish("stats", LAST_YEAR, "v1");
-
-        start();
-
-        assertThat(published).containsExactly(new SnapshotPublished(Map.of("stats", LAST_YEAR)));
-    }
-
-    @Test
-    void refreshThroughTheEndpointAnswersWithTheNewSourceTable() throws IOException {
-        publish("stats", LAST_YEAR, "v1");
-        Snapshot snapshot = snapshot(false);
-        snapshot.afterSingletonsInstantiated();
-        publish("stats", THIS_YEAR, "v2");
-
-        assertThat(new DataEndpoint(snapshot, db).refresh())
-                .filteredOn(row -> row.get("name").equals("stats"))
-                .extracting(row -> row.get("period"))
-                .containsExactly(THIS_YEAR);
-        assertThat(stats()).containsExactly("v2");
     }
 
     @Test
@@ -304,21 +287,60 @@ class SnapshotTest {
     }
 
     @Test
-    void frozenStartFailsNamingTheSourcesTheLockLacksBeforeDownloading() throws IOException {
+    void problemOfASiteThatCannotBeReachedNamesTheException() throws IOException {
+        SourceFile unreachable = new SourceFile(
+                SourceFile.STORED,
+                "http://localhost:%d/stats.csv".formatted(closedPort()),
+                Form.NONE,
+                SourceFile.TABLE);
+        new Lock(Map.of("stats", new LockedSource(LAST_YEAR, List.of(new LockedFile(unreachable, fingerprint("v1"))))))
+                .write(dir.resolve("sources.lock.json"));
+
+        start();
+
+        assertThat(problem("stats")).contains("Exception"); // the JDK's has no message: it read "null"
+    }
+
+    @Test
+    void startThatChangesNothingLeavesTheLockAlone() throws IOException {
+        publish("stats", LAST_YEAR, "v1");
+        start();
+        Files.setLastModifiedTime(dir.resolve("sources.lock.json"), FileTime.fromMillis(0));
+
+        start();
+
+        assertThat(Files.getLastModifiedTime(dir.resolve("sources.lock.json"))).isEqualTo(FileTime.fromMillis(0));
+    }
+
+    @Test
+    void everyBuildIsAnnouncedWithWhatItLoaded() throws IOException {
+        site.down.add(url("list", Source.CURRENT));
         publish("stats", LAST_YEAR, "v1");
 
-        assertThatThrownBy(() -> snapshot(false, true).afterSingletonsInstantiated())
-                .hasMessageContaining("has no entry for [list, segments, stats]");
-        assertThat(site.asked).isEmpty();
+        start();
+
+        assertThat(published).containsExactly(new SnapshotPublished(Map.of("stats", LAST_YEAR)));
+    }
+
+    /** {@code value} as the source's file for {@code period}. */
+    private void publish(String source, String period, String value) {
+        site.files.put(url(source, period), csv(value));
+    }
+
+    private String url(String source, String period) {
+        return site.url(
+                period.equals(Source.CURRENT)
+                        ? "/" + source + ".csv"
+                        : "/%s-%d.csv".formatted(source, LocalDate.parse(period).getYear()));
+    }
+
+    private static String csv(String value) {
+        return "value\n" + value + "\n";
     }
 
     /** A start, as the app's first build. */
     private void start() throws IOException {
         snapshot(false).afterSingletonsInstantiated();
-    }
-
-    private void refresh() throws IOException {
-        snapshot(false).refresh();
     }
 
     /**
@@ -353,33 +375,25 @@ class SnapshotTest {
         Web web = new Web(RestClient.builder(), ClientHttpRequestFactoryBuilder.jdk(), HttpClientSettings.defaults());
         return new Snapshot(
                 properties,
-                new Downloaders(Map.of(Downloader.STORED, (file, target) -> web.download(file.url(), target))),
-                TablesTest.formats(),
+                new Downloaders(Map.of(SourceFile.STORED, (file, target) -> web.download(file.url(), target))),
+                FormatsTest.formats(),
                 web,
                 db,
                 event -> published.add((SnapshotPublished) event));
     }
 
+    private Path cache() {
+        return dir.resolve("cache");
+    }
+
+    private Lock lock() {
+        return Lock.read(dir.resolve("sources.lock.json"));
+    }
+
     /** The lock entry of {@code stats} with its file of {@code period} holding {@code value}. */
     private LockedSource locked(String period, String value) {
-        SourceFile file = new SourceFile(Downloader.STORED, url("stats", period), Form.NONE);
+        SourceFile file = new SourceFile(SourceFile.STORED, url("stats", period), Form.NONE, SourceFile.TABLE);
         return new LockedSource(period, List.of(new LockedFile(file, fingerprint(value))));
-    }
-
-    /** {@code value} as the source's file for {@code period}. */
-    private void publish(String source, String period, String value) {
-        site.files.put(url(source, period), csv(value));
-    }
-
-    private String url(String source, String period) {
-        return site.url(
-                period.equals(Source.CURRENT)
-                        ? "/" + source + ".csv"
-                        : "/%s-%d.csv".formatted(source, LocalDate.parse(period).getYear()));
-    }
-
-    private static String csv(String value) {
-        return "value\n" + value + "\n";
     }
 
     private static String fingerprint(String value) {
@@ -392,33 +406,24 @@ class SnapshotTest {
         }
     }
 
-    private Path cache() {
-        return dir.resolve("cache");
-    }
-
-    private Lock lock() {
-        return Lock.read(dir.resolve("sources.lock.json"));
-    }
-
-    private List<String> stats() {
-        return db.fetch("select value from stats").getValues(0, String.class);
-    }
-
     /** Its period, whether it matches the lock, and its problem. */
     private Object[] source(String name) {
-        return db.fetchSingle("select period, matches_lock, problem from source where name = ?", name)
+        return db.fetchSingle(select(SOURCE.PERIOD, SOURCE.MATCHES_LOCK, SOURCE.PROBLEM)
+                        .from(SOURCE)
+                        .where(SOURCE.NAME.eq(name)))
                 .intoArray();
     }
 
-    private String problem(String name) {
-        return db.fetchSingle("select problem from source where name = ?", name).get(0, String.class);
+    private List<String> stats() {
+        return db.fetchValues(select(field(name("value"), String.class)).from(name("stats")));
     }
 
-    /** A port nothing listens on any more. */
-    private static int closedPort() throws IOException {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        }
+    private void refresh() throws IOException {
+        snapshot(false).refresh();
+    }
+
+    private String problem(String name) {
+        return db.fetchSingle(SOURCE, SOURCE.NAME.eq(name)).getProblem();
     }
 
     /** The content of every file in the cache. */
@@ -433,6 +438,13 @@ class SnapshotTest {
             return Files.readString(file);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    /** A port nothing listens on any more. */
+    private static int closedPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
         }
     }
 }

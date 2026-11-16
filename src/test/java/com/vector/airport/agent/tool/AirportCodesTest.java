@@ -39,4 +39,11 @@ class AirportCodesTest {
         assertThatThrownBy(() -> codes.ids(List.of("SFO", "LA")))
                 .hasMessage("No airport has the code [LA]; look it up with find");
     }
+
+    /** A code is a bind value, so a quote in it cannot end the SQL string (OWASP: parameterized queries). */
+    @Test
+    void codeThatLooksLikeSqlIsAnUnknownCode() {
+        assertThatThrownBy(() -> codes.ids(List.of("BOS'); drop table airport; --")))
+                .hasMessage("No airport has the code [BOS'); DROP TABLE AIRPORT; --]; look it up with find");
+    }
 }
